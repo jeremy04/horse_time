@@ -25,19 +25,85 @@
         <script src="js/vendor/underscore-min.js"></script>
         <script src="js/vendor/jquery-1.11.2.min.js"></script>
         <script>
+        var penguins = [];
+        var picks = new Map();
+        var draftOrder;
+        var pickCount = 1;
+        var pickOrder = new Map();
+
         $( document ).ready(function() {
-          $("input:checkbox").on("click", function() { 
-            $("#randomize").removeAttr('disabled');
+
+          $.get("/players.json", function( data ) {
+            penguins = data;
           });
 
+          $("input:checkbox").on("click", function() { 
+            $("#randomize").removeAttr('disabled');
+          }); 
+
+          
           $("#randomize").on("click", function(){
             $("#selectHorse").empty();
-            console.log("\n");
+
             var players = $("input:checkbox:checked");
-            var randomPlayers = _.shuffle(players); 
-            _.each(randomPlayers, function(player) {
-              $("#selectHorse").append("<p>" + player.value + "</p>");
+            var randomPlayers = _.shuffle(players);
+            $("#selectHorse").append("<h3>Draft Order</h3>");
+
+            draftOrder = _.map(randomPlayers, function(player) { 
+              return player.value; 
             });
+
+            _.each(randomPlayers, function(player, id) {
+              picks.set(player.value, [])
+              $("#selectHorse").append("<p id='" + player.value + "'>" + player.value );
+
+              $("#selectHorse").append("<input type='text' name=\"" + player.value + "\"><a class=\"btn btn-default\" id=\"draft" + player.value +  "\" role=\"button\">Draft</a></p>");
+             
+              if (id != 0) {
+                $("#draft" + player.value).css("display", "none");
+                $("input[name=\"" + player.value + "\"]").css("display", "none");
+              }
+
+            });
+
+            var teams = draftOrder.length;
+            var rounds = 4;
+            var total = teams * rounds;
+
+            _.each(draftOrder, function(val, index) {         
+              _.times(total,function(i) {
+                if ( Math.abs(teams + 0.5 - ((i) % (2*teams)+1)) == teams + 0.5-(index + 1) ) {
+
+                  pickOrder.set(i+1, val);
+
+                }
+              });
+
+            });
+
+            $("#selectHorse p:first-of-type").css("color","red");
+
+            _.each(draftOrder, function(player) { 
+                $("#draft" + player).on("click", function(){
+
+                    currentPlayer = pickOrder.get(pickCount);
+
+                    $("#draft" + currentPlayer).css("display", "none");
+                    $("input[name=\"" + currentPlayer + "\"]").css("display", "none");
+                    $("#" + currentPlayer).css("color", "black");
+
+                    pickCount += 1;
+                    nextPlayer = pickOrder.get(pickCount);
+                    console.log(nextPlayer);
+
+                    $("#draft" + nextPlayer).css("display", "inline");
+                    $("input[name=\"" + nextPlayer + "\"]").css("display", "inline");
+                    $("#" + nextPlayer).css("color", "red");
+                    
+
+                });
+            });
+
           });
 
 
@@ -99,6 +165,55 @@
               Matt
             </label>
           </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" name="players" value="Mitch">
+              Mitch
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" name="players" value="Torres">
+              Torres
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" name="players" value="Duke">
+              Duke
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" name="players" value="Savory Dave">
+              Savory Dave
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" name="players" value="Sweet Dave">
+              Sweet Dave
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" name="players" value="Katz">
+              Katz
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" name="players" value="Mark">
+              Mark
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" name="players" value="Igor">
+              Igor
+            </label>
+          </div>
+
           <div class="checkbox">
             <label>
               <input type="checkbox" name="players" value="Chris">

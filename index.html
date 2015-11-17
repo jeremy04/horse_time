@@ -17,6 +17,12 @@
                 padding-top: 50px;
                 padding-bottom: 20px;
             }
+            .autocomplete-suggestions { border: 1px solid #999; background: #FFF; overflow: auto; }
+            .autocomplete-suggestion { padding: 2px 5px; white-space: nowrap; overflow: hidden; }
+            .autocomplete-selected { background: #F0F0F0; }
+            .autocomplete-suggestions strong { font-weight: normal; color: #3399FF; }
+            .autocomplete-group { padding: 2px 5px; }
+            .autocomplete-group strong { display: block; border-bottom: 1px solid #000; }
         </style>
         <link rel="stylesheet" href="css/bootstrap-theme.min.css">
         <link rel="stylesheet" href="css/main.css">
@@ -24,17 +30,89 @@
         <script src="js/vendor/modernizr-2.8.3-respond-1.4.2.min.js"></script>
         <script src="js/vendor/underscore-min.js"></script>
         <script src="js/vendor/jquery-1.11.2.min.js"></script>
+        <script src="js/vendor/underscore.string.min.js"></script>
+        <script src="js/vendor/jquery.autocomplete.min.js"></script>
+        
         <script>
-        var penguins = [];
+        var penguins;
         var picks = new Map();
         var draftOrder;
         var pickCount = 1;
-        var pickOrder = new Map();
+   
+        var horses;
 
         $( document ).ready(function() {
 
+          function pickHorse(suggestion) {
+            console.log(suggestion.value);
+            horses = _.without(horses, suggestion.value);
+          }
+
+          function generatePickOrder(draftOrder){
+            var pickOrder = new Map();
+            var teams = draftOrder.length;
+            var rounds = 4;
+            var total = teams * rounds;
+
+            _.each(draftOrder, function(val, index) {         
+              _.times(total,function(i) {
+                if ( Math.abs(teams + 0.5 - ((i) % (2*teams)+1)) == teams + 0.5-(index + 1) ) {
+                  pickOrder.set(i+1, val);
+                }
+              });
+
+            });
+            return pickOrder;
+          }
+
+          function generateDraft(draftOrder, pickOrder) {
+            $("#selectHorse p:first-of-type").css("color","red");
+
+            _.each(draftOrder, function(player) { 
+              $("#draft" + player).on("click", function(){
+
+                currentPlayer = pickOrder.get(pickCount);
+
+                selection = $("input[name=\"" + currentPlayer + "\"]").val();
+                if (selection == "") { return }
+
+                $("#draft" + currentPlayer).css("display", "none");
+                $("input[name=\"" + currentPlayer + "\"]").css("display", "none");
+                $("input[name=\"" + currentPlayer + "\"]").val('');
+                $("#" + currentPlayer).css("color", "black");
+
+                pickCount += 1;
+
+                nextPlayer = pickOrder.get(pickCount);
+                jQuery.noConflict();
+
+
+                $("input[name=\"" + nextPlayer + "\"]").autocomplete({
+                  lookup: horses,
+                  onSelect: pickHorse
+                });
+             
+
+                $("#draft" + nextPlayer).css("display", "inline");
+                $("input[name=\"" + nextPlayer + "\"]").css("display", "inline");
+                
+
+                if (currentPlayer == nextPlayer)
+                {
+                  $("#" + nextPlayer).css("color", "green");
+                }
+                else
+                {
+                  $("#" + nextPlayer).css("color", "red");  
+                }
+
+              });
+            });
+          }
+
           $.get("/players.json", function( data ) {
             penguins = data;
+            horses = data.penguins.concat(data.other);
           });
 
           $("input:checkbox").on("click", function() { 
@@ -43,66 +121,41 @@
 
           
           $("#randomize").on("click", function(){
-            $("#selectHorse").empty();
-
+            $("#selectHorseContainer").empty();
+            $("#selectHorse").append("<div id='selectHorseContainer'>");
             var players = $("input:checkbox:checked");
+            var players = _.map(players, function(player) { return player.value; });
             var randomPlayers = _.shuffle(players);
-            $("#selectHorse").append("<h3>Draft Order</h3>");
 
-            draftOrder = _.map(randomPlayers, function(player) { 
-              return player.value; 
-            });
+            draftOrder = _.map(randomPlayers, function(player) { return player.replace(/\s/, ''); });
 
             _.each(randomPlayers, function(player, id) {
-              picks.set(player.value, [])
-              $("#selectHorse").append("<p id='" + player.value + "'>" + player.value );
+              player_id = player.replace(/\s/, '');
+              picks.set(player_id, []);
 
-              $("#selectHorse").append("<input type='text' name=\"" + player.value + "\"><a class=\"btn btn-default\" id=\"draft" + player.value +  "\" role=\"button\">Draft</a></p>");
+              $("#selectHorseContainer").append("<p id='" + player_id + "'>" + player );
+
+              $("#selectHorseContainer").append("<input type='text' name=\"" + player_id + "\"><a class=\"btn btn-default\" id=\"draft" + player_id +  "\" role=\"button\">Draft</a></p>");
+
+              jQuery.noConflict();
+
+              $("input[name=\"" + player_id + "\"]").autocomplete({
+                lookup: horses,
+                onSelect: pickHorse
+              });
              
               if (id != 0) {
-                $("#draft" + player.value).css("display", "none");
-                $("input[name=\"" + player.value + "\"]").css("display", "none");
+                $("#draft" + player_id).css("display", "none");
+                $("input[name=\"" + player_id + "\"]").css("display", "none");
               }
 
             });
+            $("#selectHorse").append("</div>");
 
-            var teams = draftOrder.length;
-            var rounds = 4;
-            var total = teams * rounds;
+            var pickOrder = generatePickOrder(draftOrder);
 
-            _.each(draftOrder, function(val, index) {         
-              _.times(total,function(i) {
-                if ( Math.abs(teams + 0.5 - ((i) % (2*teams)+1)) == teams + 0.5-(index + 1) ) {
+            generateDraft(draftOrder, pickOrder);
 
-                  pickOrder.set(i+1, val);
-
-                }
-              });
-
-            });
-
-            $("#selectHorse p:first-of-type").css("color","red");
-
-            _.each(draftOrder, function(player) { 
-                $("#draft" + player).on("click", function(){
-
-                    currentPlayer = pickOrder.get(pickCount);
-
-                    $("#draft" + currentPlayer).css("display", "none");
-                    $("input[name=\"" + currentPlayer + "\"]").css("display", "none");
-                    $("#" + currentPlayer).css("color", "black");
-
-                    pickCount += 1;
-                    nextPlayer = pickOrder.get(pickCount);
-                    console.log(nextPlayer);
-
-                    $("#draft" + nextPlayer).css("display", "inline");
-                    $("input[name=\"" + nextPlayer + "\"]").css("display", "inline");
-                    $("#" + nextPlayer).css("color", "red");
-                    
-
-                });
-            });
 
           });
 
@@ -220,13 +273,11 @@
               Chris
             </label>
           </div>
-        </div>
-        <div class="col-md-4">
-          <h2>Ok! Horse time!</h2>
           <p><a class="btn btn-default" id="randomize" role="button" disabled>Randomize!</a></p>
-       </div>
+
+        </div>
         <div class="col-md-4" id="selectHorse">
-    
+          <h2>Draft Order</h2>
         </div>
       </div>
 

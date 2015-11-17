@@ -23,6 +23,7 @@
             .autocomplete-suggestions strong { font-weight: normal; color: #3399FF; }
             .autocomplete-group { padding: 2px 5px; }
             .autocomplete-group strong { display: block; border-bottom: 1px solid #000; }
+            p.indent { text-indent: 10px;}
         </style>
         <link rel="stylesheet" href="css/bootstrap-theme.min.css">
         <link rel="stylesheet" href="css/main.css">
@@ -39,13 +40,12 @@
         var draftOrder;
         var pickCount = 1;
    
-        var horses;
+        var horses = [];
 
         $( document ).ready(function() {
 
           function pickHorse(suggestion) {
-            console.log(suggestion.value);
-            horses = _.without(horses, suggestion.value);
+            return;
           }
 
           function generatePickOrder(draftOrder){
@@ -68,13 +68,53 @@
           function generateDraft(draftOrder, pickOrder) {
             $("#selectHorse p:first-of-type").css("color","red");
 
-            _.each(draftOrder, function(player) { 
+            _.each(draftOrder, function(player) {
+
+              $("input[name=\"" + player + "\"]").keypress(function (e) {
+                if (e.which == 13) {
+                   $("#draft" + player).click();
+                }
+              });
+
+
               $("#draft" + player).on("click", function(){
 
                 currentPlayer = pickOrder.get(pickCount);
 
-                selection = $("input[name=\"" + currentPlayer + "\"]").val();
-                if (selection == "") { return }
+                var selection = $("input[name=\"" + currentPlayer + "\"]").val();
+                if (selection == "") { alert("Select a horse bro!"); return; }
+                if (!_.contains(horses, selection)) { alert("That's not a horse, bro"); return; }
+
+                var player_horses = picks.get(currentPlayer);
+
+                if (_.contains(penguins.other, selection) && player_horses.other.length == 2)
+                {
+                  alert("You already have the limit for other team bro");
+                  return;
+                }
+
+                if (_.contains(penguins.penguins, selection) && player_horses.penguins.length == 2)
+                {
+                  alert("You already have the limit for penguins bro");
+                  return;
+                }
+
+                // Validation pass, add to my picks!
+
+                if(_.contains(penguins.other, selection)) {
+                  player_horses.other.push(selection);
+                }
+                else
+                {
+                  player_horses.penguins.push(selection);
+                }
+
+                picks.set(currentPlayer, player_horses);
+                $("#horses_selected #" + currentPlayer + "_horses").append("<p class='indent'>" + selection + "</p>");
+
+                //Update autocomplete
+                horses = _.without(horses, selection);
+
 
                 $("#draft" + currentPlayer).css("display", "none");
                 $("input[name=\"" + currentPlayer + "\"]").css("display", "none");
@@ -84,10 +124,14 @@
                 pickCount += 1;
 
                 nextPlayer = pickOrder.get(pickCount);
+
+                // refresh autocomplete?
                 jQuery.noConflict();
 
 
                 $("input[name=\"" + nextPlayer + "\"]").autocomplete({
+                  orientation: "auto",
+                  minChars: '2',
                   lookup: horses,
                   onSelect: pickHorse
                 });
@@ -111,18 +155,31 @@
           }
 
           $.get("/players.json", function( data ) {
+            console.log("Got it dude:" + data);
             penguins = data;
             horses = data.penguins.concat(data.other);
+            $("input:checkbox").removeAttr('disabled');
+
           });
 
           $("input:checkbox").on("click", function() { 
             $("#randomize").removeAttr('disabled');
           }); 
-
           
           $("#randomize").on("click", function(){
+
             $("#selectHorseContainer").empty();
+            $("#horses_selected").empty();
             $("#selectHorse").append("<div id='selectHorseContainer'>");
+
+            if (pickCount > 1) {
+
+              window.location.reload();
+            }
+            // remove these globals soon
+            picks = new Map();
+            pickCount = 1;
+
             var players = $("input:checkbox:checked");
             var players = _.map(players, function(player) { return player.value; });
             var randomPlayers = _.shuffle(players);
@@ -130,20 +187,23 @@
             draftOrder = _.map(randomPlayers, function(player) { return player.replace(/\s/, ''); });
 
             _.each(randomPlayers, function(player, id) {
-              player_id = player.replace(/\s/, '');
-              picks.set(player_id, []);
+              var player_id = player.replace(/\s/, '');
+              picks.set(player_id, {"penguins": [], "other": []});
 
               $("#selectHorseContainer").append("<p id='" + player_id + "'>" + player );
+              $("#horses_selected").append("<div id='" + player_id + "_horses'><h4><u>" + player + "</u></h4></div>");
 
-              $("#selectHorseContainer").append("<input type='text' name=\"" + player_id + "\"><a class=\"btn btn-default\" id=\"draft" + player_id +  "\" role=\"button\">Draft</a></p>");
+              $("#selectHorseContainer").append("<input type='text' class=\"form-control\" autocomplete=\"on\" name=\"" + player_id + "\"><button type='submit' class=\"btn btn-default\" id=\"draft" + player_id +  "\" role=\"button\">Draft</button></p>");
 
-              jQuery.noConflict();
+                jQuery.noConflict();
 
-              $("input[name=\"" + player_id + "\"]").autocomplete({
-                lookup: horses,
-                onSelect: pickHorse
-              });
-             
+                $("input[name=\"" + player_id + "\"]").autocomplete({
+                  orientation: 'auto',
+                  minChars: '2',
+                  lookup: horses,
+                  onSelect: pickHorse
+                });
+                           
               if (id != 0) {
                 $("#draft" + player_id).css("display", "none");
                 $("input[name=\"" + player_id + "\"]").css("display", "none");
@@ -208,68 +268,68 @@
           <h2>Who wants to play?</h2>
           <div class="checkbox">
             <label>
-              <input type="checkbox" name="players" value="Jeremy">
+              <input type="checkbox" name="players" value="Jeremy" disabled>
               Jeremy
             </label>
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" name="players" value="Matt">
+              <input type="checkbox" name="players" value="Matt" disabled>
               Matt
             </label>
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" name="players" value="Mitch">
+              <input type="checkbox" name="players" value="Mitch" disabled>
               Mitch
             </label>
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" name="players" value="Torres">
+              <input type="checkbox" name="players" value="Torres" disabled>
               Torres
             </label>
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" name="players" value="Duke">
+              <input type="checkbox" name="players" value="Duke" disabled>
               Duke
             </label>
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" name="players" value="Savory Dave">
+              <input type="checkbox" name="players" value="Savory Dave" disabled>
               Savory Dave
             </label>
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" name="players" value="Sweet Dave">
+              <input type="checkbox" name="players" value="Sweet Dave" disabled>
               Sweet Dave
             </label>
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" name="players" value="Katz">
+              <input type="checkbox" name="players" value="Katz" disabled>
               Katz
             </label>
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" name="players" value="Mark">
+              <input type="checkbox" name="players" value="Mark" disabled>
               Mark
             </label>
           </div>
           <div class="checkbox">
             <label>
-              <input type="checkbox" name="players" value="Igor">
+              <input type="checkbox" name="players" value="Igor" disabled>
               Igor
             </label>
           </div>
 
           <div class="checkbox">
             <label>
-              <input type="checkbox" name="players" value="Chris">
+              <input type="checkbox" name="players" value="Chris" disabled>
               Chris
             </label>
           </div>
@@ -279,6 +339,12 @@
         <div class="col-md-4" id="selectHorse">
           <h2>Draft Order</h2>
         </div>
+        <div class="col-md-4" id="horses">
+          <h2>Horses Selected</h2>
+          <div id="horses_selected">
+          </div>
+        </div>
+
       </div>
 
       <hr>

@@ -4,6 +4,8 @@ require 'sinatra'
 require './team_scrapper'
 require 'json'
 
+set :bind, '0.0.0.0'
+
 get '/' do
   send_file 'index.html'
 end
@@ -17,7 +19,6 @@ get '/players.json' do
   scrapper.visit_roster("http://www2.dailyfaceoff.com#{AwayTeamScrapper.new.determine_team}")
   other_team = scrapper.scrape_players
   {:penguins => penguins[:players].uniq, :other => other_team[:players].uniq }.to_json
-
 end
 
 get '/random.json' do

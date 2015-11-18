@@ -10,6 +10,10 @@ get '/' do
   send_file 'index.html'
 end
 
+get '/scores.json' do
+  Scores.new.goals.to_json
+end
+
 get '/players.json' do
   content_type :json
   scrapper = TeamScrapper.new

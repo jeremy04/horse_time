@@ -7,7 +7,6 @@ class Scores
     page = agent.get("http://www.nicetimeonice.com/api/seasons/20152016/games/")
 
     json = JSON.parse(page.content)
-    pp json
     json = json.select { |x| x["awayTeam"] == "Pittsburgh Penguins" || x["homeTeam"] == "Pittsburgh Penguins" }
     json = json.select { |x| Time.now.to_date == Date.parse(x["date"])  }.first
     

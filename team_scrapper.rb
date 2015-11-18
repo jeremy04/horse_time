@@ -34,7 +34,7 @@ class AwayTeamScrapper
     doc.css("#matchups_container table tr").each do |x| 
       schedule[Date.parse(x.children[1].text)] = [x.children[3].text, x.children[5].text]
     end
-    future = schedule.select { |k,v| Time.now.to_date == k }
+    future = schedule.select { |k,v| Time.now.to_date >= k }
     future.first[1].delete("Pittsburgh Penguins")
     team = future.first[1].first
  

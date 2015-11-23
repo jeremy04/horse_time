@@ -11,14 +11,15 @@ get '/' do
 end
 
 get '/scores.json' do
-  Scores.new.goals.to_json
+  horse_team = params[:horse_team] || "Pittsburgh Penguins"
+  Scores.new.goals(horse_team).to_json
 end
 
 get '/players.json' do
   content_type :json
-  horse = params[:horse] || "Pittsburgh Penguins"
+  horse_team = params[:horse_team] || "Pittsburgh Penguins"
 
-  team_identify = TeamIdentify.new(horse)
+  team_identify = TeamIdentify.new(horse_team)
   horse_url, other_url = team_identify.determine_team
 
   scrapper = TeamScrapper.new

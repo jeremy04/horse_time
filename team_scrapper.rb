@@ -5,11 +5,11 @@ require 'active_support/all'
 
 class Scores
 
-  def goals
+  def goals(horse_team)
     agent = Mechanize.new
     page = agent.get("http://www.nicetimeonice.com/api/seasons/20152016/games/")
     json = JSON.parse(page.content)
-    json = json.select { |x| x["awayTeam"] == "Pittsburgh Penguins" || x["homeTeam"] == "Pittsburgh Penguins" }
+    json = json.select { |x| x["awayTeam"] == horse_team || x["homeTeam"] == horse_team }
     json = json.select { |x| Time.now.to_date >= Date.parse(x["date"])  }.first
     
     begin
@@ -30,7 +30,7 @@ end
 
 class TeamIdentify
   attr_reader :other_team
-  
+
   def initialize(horse_team)
     @horse_team = horse_team
   end

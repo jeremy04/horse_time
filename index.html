@@ -93,7 +93,7 @@
                   return;
                 }
 
-                if (_.contains(penguins.penguins, selection) && player_horses.penguins.length == 2)
+                if (_.contains(penguins.horse_team, selection) && player_horses.horse_team.length == 2)
                 {
                   alert("You already have the limit for penguins bro");
                   return;
@@ -157,7 +157,7 @@
           $.get("/players.json", function( data ) {
             console.log("Got it dude:" + data);
             penguins = data;
-            horses = data.penguins.concat(data.other);
+            horses = data.horse_team.concat(data.other);
             $("input:checkbox").removeAttr('disabled');
 
           });

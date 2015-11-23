@@ -16,13 +16,19 @@ end
 
 get '/players.json' do
   content_type :json
+  horse = params[:horse] || "Pittsburgh Penguins"
+
+  team_identify = TeamIdentify.new(horse)
+  horse_url, other_url = team_identify.determine_team
+
   scrapper = TeamScrapper.new
-  scrapper.visit_roster("http://www2.dailyfaceoff.com/teams/lines/36/pittsburgh-penguins")
+  scrapper.visit_roster("http://www2.dailyfaceoff.com#{horse_url}")
   penguins = scrapper.scrape_players
+
   scrapper = TeamScrapper.new
-  scrapper.visit_roster("http://www2.dailyfaceoff.com#{AwayTeamScrapper.new.determine_team}")
+  scrapper.visit_roster("http://www2.dailyfaceoff.com#{other_url}")
   other_team = scrapper.scrape_players
-  {:penguins => penguins[:players].uniq, :other => other_team[:players].uniq }.to_json
+  {:horse_team => penguins[:players].uniq, :other => other_team[:players].uniq }.to_json
 end
 
 get '/random.json' do

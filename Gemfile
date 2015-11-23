@@ -4,3 +4,5 @@ gem "sinatra"
 gem 'sinatra-contrib'
 gem 'mechanize'
 gem 'json'
+gem 'chronic'
+gem 'activesupport'

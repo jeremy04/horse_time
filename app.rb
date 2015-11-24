@@ -12,7 +12,7 @@ end
 
 get '/scores.json' do
   horse_team = params[:horse_team] || "Pittsburgh Penguins"
-  Scores.new.goals(horse_team).to_json
+  Scores.new(horse_team).goals.to_json
 end
 
 get '/players.json' do

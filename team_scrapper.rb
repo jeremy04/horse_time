@@ -24,7 +24,7 @@ class Scores
     doc = Nokogiri::HTML(page.body)  
     skaters = doc.css(".skaters tbody tr").children.map { |x| x.text }.each_slice(9).to_a
     goals = skaters.select { |s| s[3].to_i > 0 }.map { |x| [x[1],x[3].to_i] }
-    assists =  skaters.select { |s| s[4].to_i > 0 }.map { |x| [x[1],x[3].to_i] }
+    assists =  skaters.select { |s| s[4].to_i > 0 }.map { |x| [x[1],x[4].to_i] }
     {:goals => goals, :assists => assists }
   end
   

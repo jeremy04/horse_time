@@ -1,16 +1,109 @@
 # A Sinatra app for displaying one's resume in multiple formats
 require 'rubygems'
 require 'sinatra'
+require 'faye'
 require './team_scrapper'
 require 'json'
+require 'securerandom'
+require 'sinatra/contrib/all'
+require 'pp'
 
 set :bind, '0.0.0.0'
 
-get '/' do
-  send_file 'index.html'
+configure do
+    require 'uri'
+    require 'redis'
+    uri = URI.parse(ENV["REDISCLOUD_URL"] || "http://127.0.0.1:6379")
+    REDIS = Redis.new(:host => uri.host, :port => uri.port, :password => uri.password)
 end
 
+def generate_activation_code(size = 4)
+  charset = %w{ 2 3 4 6 7 9 A C D E F G H J K M N P Q R T V W X Y Z}
+  (0...size).map{ charset.to_a[SecureRandom.random_number(charset.size)] }.join
+end
+
+post '/login' do
+  if room = RoomCodeValidator.room_has_players?(params[:room_code])
+    players = JSON.parse(room)
+    players <<  { name: params[:name], 
+                  horses: { horse_team: [], other_team: [] }
+                }
+    if players.size == 1
+      REDIS.hset(params[:room_code], "room_manager", params[:name])
+    end
+
+    REDIS.hset(params[:room_code], "players", JSON.dump(players) )
+    cookie_info = { room_code: params[:room_code], name: params[:name] }
+    response.set_cookie "horsetime", { value: JSON.dump(cookie_info), max_age: 5 * 60 * 60 }
+  else
+    return "AW CRAIG"
+  end
+  redirect to('/')
+end
+
+class RoomCodeValidator
+
+  def self.room_has_players?(room_code)
+    REDIS.hget(room_code, "players")
+  end
+
+  def self.cookies_match_redis(cookie)
+    cookie = cookie || {}.to_json
+    room_code = JSON.parse(cookie)["room_code"]
+    name      = JSON.parse(cookie)["name"]
+    cookie && REDIS.hexists(room_code, "players")
+  end
+
+end
+
+get %r{/room/([A-Z0-9]{4})} do
+  if RoomCodeValidator.cookies_match_redis(cookies[:horsetime])
+    room_code = JSON.parse(cookies[:horsetime])["room_code"]
+    @manager = REDIS.hget(room_code, "room_manager")
+    @user = JSON.parse(cookies[:horsetime])["name"]
+    players = REDIS.hget(room_code, "players")
+    pp players
+    @players = JSON.parse(players).map { |p| p["name"] }
+    if REDIS.hget(room_code, "ready") == "false"
+      erb :lobby
+    else 
+      erb :room
+    end
+  else
+    redirect "/login"
+  end
+end
+
+get "/login" do
+  if RoomCodeValidator.cookies_match_redis(cookies[:horsetime])
+    room_code = JSON.parse(cookies[:horsetime])["room_code"]
+    redirect "/room/#{room_code}"
+  else
+    erb :login
+  end
+end
+
+get '/' do
+  if cookies[:horsetime]
+    room_code = JSON.parse(cookies[:horsetime])["room_code"]
+    redirect "/room/#{room_code}"
+  else
+    redirect "/login"
+  end
+end
+
+post '/generate_room_code.json' do
+  content_type :json
+  activation_code = generate_activation_code
+  REDIS.hset(activation_code, "players", JSON.dump([]))
+  REDIS.hset(activation_code, "ready", false)
+  REDIS.expire(activation_code, 5 * 60 * 60)
+  {:room_code => activation_code}.to_json
+end
+
+
 get '/scores.json' do
+  content_type :json
   horse_team = params[:horse_team] || "Pittsburgh Penguins"
   Scores.new(horse_team).goals.to_json
 end

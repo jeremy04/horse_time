@@ -1,0 +1,65 @@
+<script>
+  
+
+  $( document ).ready(function() {
+
+    var client = new Faye.Client('/faye')
+    client.disable('websocket');
+  
+ 
+
+    client.publish('/signon', {
+      user: "<%= @user %>"
+     });
+ 
+    client.subscribe('/signon', function(message) {
+      console.log("HELLO FROM" + message.user);
+      if($("#" + message.user).length == 0) {
+        console.log("Adding");
+        $("#whos_online").append("<div id=\"" 
+          + message.user + "\" class=\"row\">" 
+          + message.user
+          + "<img id=\"" + message.user 
+          + "_img\"" 
+          + "src=\"/img/purple_devil.png\" width=\"5%\" height=\"5%\">"
+          + "</div>");
+      }
+      else {
+        $("#" + message.user + "_img").css("display", "inline");
+      }
+
+
+    });
+
+  });
+
+</script>
+<div class="row">
+  <div class="col-md-4">
+    <h2>GAME IS ABOUT TO START, <%= @user %></h2>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-4">
+    Room Manager: <%= @manager %>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-4" id="whos_online">
+    <% @players.each do |player| %>
+      <div id="<%= player %>" class="row">
+        <%= player %><img style="display: none" id="<%= player %>_img" src="/img/purple_devil.png" width="5%" height="5%">
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<% if @manager == @user %>
+<div class="row">
+  <div class="col-md-4">
+    <p><a class="btn btn-default" id="start_game" role="button">EVERYONES IN GUYS</a></p>
+  </div>
+</div>
+<% end %>
+<hr>

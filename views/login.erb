@@ -1,0 +1,26 @@
+<form class="navbar-form" method="post" action="/login">
+  <div class="form-group">
+    <input type="text" name="room_code" placeholder="ENTER 4-LETTER CODE" class="form-control">
+  </div>
+  <div class="form-group">
+    <input type="text" name="name"  placeholder="ENTER YOUR NAME" class="form-control">
+  </div>
+  <button type="submit" class="btn btn-success">PLAY</button>
+</form>
+        
+<script>
+        $( document ).ready(function() {
+          $("#new_game").on("click", function(){
+            $.post("/generate_room_code.json", function( data ) {
+              console.log("Game started:" + data.room_code);
+              $( "#new_game" ).replaceWith("<p>" + data.room_code + "</p>");
+              
+            });
+
+          });
+        });
+</script>
+
+
+
+<p><a class="btn btn-default" id="new_game" role="button">NEW GAME</a></p>

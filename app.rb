@@ -51,6 +51,7 @@ post '/generate_draft.json' do
   players = JSON.parse(REDIS.hget(params[:room_code], "players")).shuffle(random: SecureRandom::RNG)
   REDIS.hset(params[:room_code], "pickCount", 1);
   REDIS.hset(params[:room_code], "players", JSON.dump(players))
+  ["Generated"].to_json
 end
 
 get '/get_players.json' do
@@ -61,8 +62,9 @@ get '/get_players.json' do
 end
 
 post '/login' do
-  if room = RoomCodeValidator.room_has_players?(params[:room_code])
-    players = JSON.parse(room)
+  params[:room_code] = params[:room_code].upcase
+  if RoomCodeValidator.room_has_players?(params[:room_code])
+    players = JSON.parse(REDIS.hget(params[:room_code], "players"))
     params[:name] = params[:name].gsub(/\s/,"")
     players <<  { name: params[:name], 
                   horses: { horse_team: [], other_team: [] }
@@ -75,7 +77,7 @@ post '/login' do
     cookie_info = { room_code: params[:room_code], name: params[:name] }
     response.set_cookie "horsetime", { value: JSON.dump(cookie_info), max_age: 5 * 60 * 60 }
   else
-    return "AW CRAIG"
+    return "Fail Whale: La sala no existe o juego ha comenzado. Lo siento, amigo."
   end
   redirect to('/')
 end
@@ -83,7 +85,7 @@ end
 class RoomCodeValidator
 
   def self.room_has_players?(room_code)
-    REDIS.hget(room_code, "players")
+    REDIS.hget(room_code, "players") && REDIS.hget(room_code, "ready") == "false"
   end
 
   def self.cookies_match_redis(cookie)
@@ -105,8 +107,14 @@ get %r{/room/([A-Z0-9]{4})} do
     if REDIS.hget(@room_code, "ready") == "false"
       erb :lobby
     else
-      @pick_order = generate_pick_order(@players)
-      erb :room
+      pp @players
+      pp @user
+      if @players.include?(@user)
+        @pick_order = generate_pick_order(@players)
+        erb :room
+      else
+        "Room Locked bro"
+      end
     end
   else
     redirect "/login"

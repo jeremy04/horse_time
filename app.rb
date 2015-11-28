@@ -8,6 +8,29 @@ require 'securerandom'
 require 'sinatra/contrib/all'
 require 'pp'
 
+require "securerandom"
+
+module SecureRandom::RNG
+  def self.rand(max)
+    SecureRandom.random_number(max)
+  end
+end
+
+  def generate_pick_order(draft_order)
+    pick_order = {}
+    teams = draft_order.size
+    rounds = 4
+    total = teams * rounds
+    draft_order.each_with_index do |value, index|
+      total.times do |i|
+        if (teams + 0.5 - ((i) % (2*teams)+1)).abs == teams + 0.5-(index + 1)
+          pick_order[i+1] = value
+        end
+      end
+    end
+    pick_order
+  end
+
 set :bind, '0.0.0.0'
 
 configure do
@@ -22,9 +45,25 @@ def generate_activation_code(size = 4)
   (0...size).map{ charset.to_a[SecureRandom.random_number(charset.size)] }.join
 end
 
+post '/generate_draft.json' do
+  content_type :json
+  REDIS.hset(params[:room_code], "ready", "true")
+  players = JSON.parse(REDIS.hget(params[:room_code], "players")).shuffle(random: SecureRandom::RNG)
+  REDIS.hset(params[:room_code], "pickCount", 1);
+  REDIS.hset(params[:room_code], "players", JSON.dump(players))
+end
+
+get '/get_players.json' do
+  content_type :json
+  players = JSON.parse(REDIS.hget(params[:room_code], "players"))
+  count = JSON.parse(REDIS.hget(params[:room_code], "pickCount"))
+  {"players"=> players, "pickCount" => count }.to_json
+end
+
 post '/login' do
   if room = RoomCodeValidator.room_has_players?(params[:room_code])
     players = JSON.parse(room)
+    params[:name] = params[:name].gsub(/\s/,"")
     players <<  { name: params[:name], 
                   horses: { horse_team: [], other_team: [] }
                 }
@@ -58,15 +97,15 @@ end
 
 get %r{/room/([A-Z0-9]{4})} do
   if RoomCodeValidator.cookies_match_redis(cookies[:horsetime])
-    room_code = JSON.parse(cookies[:horsetime])["room_code"]
-    @manager = REDIS.hget(room_code, "room_manager")
+    @room_code = JSON.parse(cookies[:horsetime])["room_code"]
+    @manager = REDIS.hget(@room_code, "room_manager")
     @user = JSON.parse(cookies[:horsetime])["name"]
-    players = REDIS.hget(room_code, "players")
-    pp players
+    players = REDIS.hget(@room_code, "players")
     @players = JSON.parse(players).map { |p| p["name"] }
-    if REDIS.hget(room_code, "ready") == "false"
+    if REDIS.hget(@room_code, "ready") == "false"
       erb :lobby
-    else 
+    else
+      @pick_order = generate_pick_order(@players)
       erb :room
     end
   else

@@ -5,15 +5,25 @@
 
     var client = new Faye.Client('/faye')
     client.disable('websocket');
-  
- 
+    
+    $("#start_game").on("click", function(){
+
+      $.post('/generate_draft.json', { room_code: "<%= @room_code %>" }, 
+        function(returnedData){
+          console.log(returnedData);
+          location.reload();
+        });
+
+
+    });
+
 
     client.publish('/signon', {
       user: "<%= @user %>"
      });
  
     client.subscribe('/signon', function(message) {
-      console.log("HELLO FROM" + message.user);
+   
       if($("#" + message.user).length == 0) {
         console.log("Adding");
         $("#whos_online").append("<div id=\"" 

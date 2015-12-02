@@ -16,20 +16,20 @@ module SecureRandom::RNG
   end
 end
 
-  def generate_pick_order(draft_order)
-    pick_order = {}
-    teams = draft_order.size
-    rounds = 4
-    total = teams * rounds
-    draft_order.each_with_index do |value, index|
-      total.times do |i|
-        if (teams + 0.5 - ((i) % (2*teams)+1)).abs == teams + 0.5-(index + 1)
-          pick_order[i+1] = value
-        end
+def generate_pick_order(draft_order)
+  pick_order = {}
+  teams = draft_order.size
+  rounds = 4
+  total = teams * rounds
+  draft_order.each_with_index do |value, index|
+    total.times do |i|
+      if (teams + 0.5 - ((i) % (2*teams)+1)).abs == teams + 0.5-(index + 1)
+        pick_order[i+1] = value
       end
     end
-    pick_order
   end
+  pick_order
+end
 
 set :bind, '0.0.0.0'
 
@@ -52,6 +52,24 @@ post '/generate_draft.json' do
   REDIS.hset(params[:room_code], "pickCount", 1);
   REDIS.hset(params[:room_code], "players", JSON.dump(players))
   ["Generated"].to_json
+end
+
+post '/update_pick.json' do
+  content_type :json
+  players = JSON.parse(REDIS.hget(params[:room_code], "players"))
+  horses = players.select { |h| h['name'] == params[:name] }.first["horses"]
+  horses["horse_team"] << params[:horse_team] if params[:horse_team]
+  horses["other_team"] << params[:other_team] if params[:other_team]
+  players.each do |player|
+    if player["name"] == params[:name]
+     player["horses"] = horses 
+   end
+  end
+  REDIS.hset(params[:room_code], "players", JSON.dump(players))
+  pickCount = REDIS.hget(params[:room_code], "pickCount").to_i
+  pickCount+=1
+  REDIS.hset(params[:room_code], "pickCount", pickCount)
+  ["Updated"].to_json
 end
 
 get '/get_players.json' do
@@ -107,14 +125,10 @@ get %r{/room/([A-Z0-9]{4})} do
     if REDIS.hget(@room_code, "ready") == "false"
       erb :lobby
     else
-      pp @players
-      pp @user
-      if @players.include?(@user)
-        @pick_order = generate_pick_order(@players)
-        erb :room
-      else
-        "Room Locked bro"
-      end
+      @pick_count = REDIS.hget(@room_code, "pickCount")
+      @pick_order = generate_pick_order(@players)
+      @roster = JSON.parse(players).map { |acc, h| { acc["name"] => acc["horses"] } }.reduce(:merge)
+      erb :room
     end
   else
     redirect "/login"

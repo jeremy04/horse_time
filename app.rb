@@ -6,6 +6,7 @@ require './team_scrapper'
 require 'json'
 require 'securerandom'
 require 'sinatra/contrib/all'
+require 'active_support/all'
 require 'pp'
 
 require "securerandom"
@@ -81,10 +82,10 @@ end
 
 post '/login' do
   params[:room_code] = params[:room_code].upcase
-  if RoomCodeValidator.room_has_players?(params[:room_code])
+  if RoomCodeValidator.room_has_players?(params[:room_code]) || !params[:name].blank? 
     players = JSON.parse(REDIS.hget(params[:room_code], "players"))
     params[:name] = params[:name].gsub(/\s/,"")
-    players <<  { name: params[:name], 
+    players <<  { name: params[:name], status: 'new',
                   horses: { horse_team: [], other_team: [] }
                 }
     if players.size == 1
@@ -115,20 +116,41 @@ class RoomCodeValidator
 
 end
 
+post "/leave_lobby" do
+  name = JSON.parse(cookies[:horsetime])["name"]
+  room_code = JSON.parse(cookies[:horsetime])["room_code"]
+  players = JSON.parse(REDIS.hget(room_code, "players"))
+  if name == REDIS.hget(room_code, "room_manager")
+    REDIS.del room_code
+  end
+  players = players.map do |player|
+    player["status"] = "inactive" if player["name"] == name
+    player
+  end
+
+  REDIS.hset(room_code, "players", JSON.dump(players))
+  response.delete_cookie "horsetime"
+  redirect "/"
+end
+
 get %r{/room/([A-Z0-9]{4})} do
   if RoomCodeValidator.cookies_match_redis(cookies[:horsetime])
     @room_code = JSON.parse(cookies[:horsetime])["room_code"]
     @manager = REDIS.hget(@room_code, "room_manager")
     @user = JSON.parse(cookies[:horsetime])["name"]
     players = REDIS.hget(@room_code, "players")
-    @players = JSON.parse(players).map { |p| p["name"] }
+    @players = JSON.parse(players).select { |p| p["status"] != 'inactive' }.map { |p| p["name"] }
     if REDIS.hget(@room_code, "ready") == "false"
+      @page = "lobby"
       erb :lobby
-    else
+    elsif REDIS.hget(@room_code, "ready") == "true"
       @pick_count = REDIS.hget(@room_code, "pickCount")
       @pick_order = generate_pick_order(@players)
       @roster = JSON.parse(players).map { |acc, h| { acc["name"] => acc["horses"] } }.reduce(:merge)
       erb :room
+    else
+      @page = "lobby"
+      erb :lobby
     end
   else
     redirect "/login"
@@ -140,6 +162,9 @@ get "/login" do
     room_code = JSON.parse(cookies[:horsetime])["room_code"]
     redirect "/room/#{room_code}"
   else
+    matches = REDIS.scan 0, match: "[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]"
+    matches = matches.flatten.select { |s| s =~ /[A-Z0-9]{4}/}
+    @public_rooms = matches
     erb :login
   end
 end

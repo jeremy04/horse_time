@@ -34,196 +34,7 @@
         <script src="/js/vendor/jquery-1.11.2.min.js"></script>
         <script src="/js/vendor/underscore.string.min.js"></script>
         <script src="/js/vendor/jquery.autocomplete.min.js"></script>
-        
-        <script>
-        // var penguins;
-        // var picks = new Map();
-        // var draftOrder;
-        // var pickCount = 1;
-   
-        // var horses = [];
 
-        // $( document ).ready(function() {
-
-        //   function pickHorse(suggestion) {
-        //     return;
-        //   }
-
-        //   function generatePickOrder(draftOrder){
-        //     var pickOrder = new Map();
-        //     var teams = draftOrder.length;
-        //     var rounds = 4;
-        //     var total = teams * rounds;
-
-        //     _.each(draftOrder, function(val, index) {         
-        //       _.times(total,function(i) {
-        //         if ( Math.abs(teams + 0.5 - ((i) % (2*teams)+1)) == teams + 0.5-(index + 1) ) {
-        //           pickOrder.set(i+1, val);
-        //         }
-        //       });
-
-        //     });
-        //     return pickOrder;
-        //   }
-
-        //   function generateDraft(draftOrder, pickOrder) {
-        //     $("#selectHorse p:first-of-type").css("color","red");
-
-        //     _.each(draftOrder, function(player) {
-
-        //       $("input[name=\"" + player + "\"]").keypress(function (e) {
-        //         if (e.which == 13) {
-        //            $("#draft" + player).click();
-        //         }
-        //       });
-
-
-        //       $("#draft" + player).on("click", function(){
-
-        //         currentPlayer = pickOrder.get(pickCount);
-
-        //         var selection = $("input[name=\"" + currentPlayer + "\"]").val();
-        //         if (selection == "") { alert("Select a horse bro!"); return; }
-        //         if (!_.contains(horses, selection)) { alert("That's not a horse, bro"); return; }
-
-        //         var player_horses = picks.get(currentPlayer);
-
-        //         if (_.contains(penguins.other, selection) && player_horses.other.length == 2)
-        //         {
-        //           alert("You already have the limit for other team bro");
-        //           return;
-        //         }
-
-        //         if (_.contains(penguins.horse_team, selection) && player_horses.horse_team.length == 2)
-        //         {
-        //           alert("You already have the limit for penguins bro");
-        //           return;
-        //         }
-
-        //         // Validation pass, add to my picks!
-
-        //         if(_.contains(penguins.other, selection)) {
-        //           player_horses.other.push(selection);
-        //         }
-        //         else
-        //         {
-        //           player_horses.penguins.push(selection);
-        //         }
-
-        //         picks.set(currentPlayer, player_horses);
-        //         $("#horses_selected #" + currentPlayer + "_horses").append("<p class='indent'>" + selection + "</p>");
-
-        //         //Update autocomplete
-        //         horses = _.without(horses, selection);
-
-
-        //         $("#draft" + currentPlayer).css("display", "none");
-        //         $("input[name=\"" + currentPlayer + "\"]").css("display", "none");
-        //         $("input[name=\"" + currentPlayer + "\"]").val('');
-        //         $("#" + currentPlayer).css("color", "black");
-
-        //         pickCount += 1;
-
-        //         nextPlayer = pickOrder.get(pickCount);
-
-        //         // refresh autocomplete?
-        //         jQuery.noConflict();
-
-
-        //         $("input[name=\"" + nextPlayer + "\"]").autocomplete({
-        //           orientation: "auto",
-        //           minChars: '2',
-        //           lookup: horses,
-        //           onSelect: pickHorse
-        //         });
-             
-
-        //         $("#draft" + nextPlayer).css("display", "inline");
-        //         $("input[name=\"" + nextPlayer + "\"]").css("display", "inline");
-                
-
-        //         if (currentPlayer == nextPlayer)
-        //         {
-        //           $("#" + nextPlayer).css("color", "green");
-        //         }
-        //         else
-        //         {
-        //           $("#" + nextPlayer).css("color", "red");  
-        //         }
-
-        //       });
-        //     });
-        //   }
-
-        //   $.get("/players.json", function( data ) {
-        //     console.log("Got it dude:" + data);
-        //     penguins = data;
-        //     horses = data.horse_team.concat(data.other);
-        //     $("input:checkbox").removeAttr('disabled');
-
-        //   });
-
-        //   $("input:checkbox").on("click", function() { 
-        //     $("#randomize").removeAttr('disabled');
-        //   }); 
-          
-        //   $("#randomize").on("click", function(){
-
-        //     $("#selectHorseContainer").empty();
-        //     $("#horses_selected").empty();
-        //     $("#selectHorse").append("<div id='selectHorseContainer'>");
-
-        //     if (pickCount > 1) {
-
-        //       window.location.reload();
-        //     }
-        //     // remove these globals soon
-        //     picks = new Map();
-        //     pickCount = 1;
-
-        //     var players = $("input:checkbox:checked");
-        //     var players = _.map(players, function(player) { return player.value; });
-        //     var randomPlayers = _.shuffle(players);
-
-        //     draftOrder = _.map(randomPlayers, function(player) { return player.replace(/\s/, ''); });
-
-        //     _.each(randomPlayers, function(player, id) {
-        //       var player_id = player.replace(/\s/, '');
-        //       picks.set(player_id, {"penguins": [], "other": []});
-
-        //       $("#selectHorseContainer").append("<p id='" + player_id + "'>" + player );
-        //       $("#horses_selected").append("<div id='" + player_id + "_horses'><h4><u>" + player + "</u></h4></div>");
-
-        //       $("#selectHorseContainer").append("<input type='text' class=\"form-control\" autocomplete=\"on\" name=\"" + player_id + "\"><button type='submit' class=\"btn btn-default\" id=\"draft" + player_id +  "\" role=\"button\">Draft</button></p>");
-
-        //         jQuery.noConflict();
-
-        //         $("input[name=\"" + player_id + "\"]").autocomplete({
-        //           orientation: 'auto',
-        //           minChars: '2',
-        //           lookup: horses,
-        //           onSelect: pickHorse
-        //         });
-                           
-        //       if (id != 0) {
-        //         $("#draft" + player_id).css("display", "none");
-        //         $("input[name=\"" + player_id + "\"]").css("display", "none");
-        //       }
-
-        //     });
-        //     $("#selectHorse").append("</div>");
-
-        //     var pickOrder = generatePickOrder(draftOrder);
-
-        //     generateDraft(draftOrder, pickOrder);
-
-
-        //   });
-
-
-        // });
-
-        </script>
     </head>
     <body>
         <!--[if lt IE 8]>
@@ -240,6 +51,20 @@
           </button>
           <a class="navbar-brand" href="#">HORSE TIME</a>
         </div>
+        <% if @page == "lobby" %>
+            <div id="navbar" class="navbar-collapse collapse">
+              <form class="navbar-form navbar-right" method="post" action="/leave_lobby" role="form">
+                <div class="form-group">
+                  <button type="submit" class="btn btn-primary btn-lg" role="button">Leave Lobby</a>
+                </div>
+                <div class="form-group">
+                  
+                </div>
+               
+              </form>
+            </div>
+        <% end %>
+
         <!--/.navbar-collapse -->
       </div>
     </nav>

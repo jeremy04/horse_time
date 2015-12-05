@@ -24,3 +24,18 @@
 
 
 <p><a class="btn btn-default" id="new_game" role="button">NEW GAME</a></p>
+
+
+<div class="row">
+  <div class="col-md-4">
+    <h2>Active Games</h2>
+  </div>
+</div>
+
+<% @public_rooms.each do |room_code| %>
+  <div class="row">
+    <div class="col-md-4">
+      <a href="/room/<%= room_code %>"><%= room_code %></a>
+    </div>
+  </div>
+<% end %>

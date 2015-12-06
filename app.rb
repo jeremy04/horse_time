@@ -2,35 +2,13 @@
 require 'rubygems'
 require 'sinatra'
 require 'faye'
-require './team_scrapper'
+require './lib/team_scrapper'
+require './lib/pick_order'
+require "./lib/rng.rb"
 require 'json'
-require 'securerandom'
 require 'sinatra/contrib/all'
 require 'active_support/all'
 require 'pp'
-
-require "securerandom"
-
-module SecureRandom::RNG
-  def self.rand(max)
-    SecureRandom.random_number(max)
-  end
-end
-
-def generate_pick_order(draft_order)
-  pick_order = {}
-  teams = draft_order.size
-  rounds = 4
-  total = teams * rounds
-  draft_order.each_with_index do |value, index|
-    total.times do |i|
-      if (teams + 0.5 - ((i) % (2*teams)+1)).abs == teams + 0.5-(index + 1)
-        pick_order[i+1] = value
-      end
-    end
-  end
-  pick_order
-end
 
 set :bind, '0.0.0.0'
 
@@ -145,7 +123,8 @@ get %r{/room/([A-Z0-9]{4})} do
       erb :lobby
     elsif REDIS.hget(@room_code, "ready") == "true"
       @pick_count = REDIS.hget(@room_code, "pickCount")
-      @pick_order = generate_pick_order(@players)
+      pick_order = PickOrder.new(@players)
+      @pick_order = pick_order.generate_pick_order
       @roster = JSON.parse(players).map { |acc, h| { acc["name"] => acc["horses"] } }.reduce(:merge)
       erb :room
     else

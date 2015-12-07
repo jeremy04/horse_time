@@ -209,13 +209,13 @@
         generateDraft(draftOrder, pickOrder);
 
         $.get("/scores.json", function(data) {
-       
-          _.each(data.goals, function(player){ 
-            $('p[data-horse="' + player[0] + '"]').append(" G: " + player[1]);
+
+          _.each(data.goals, function(points, player){ 
+            $('p[data-horse="' + player + '"]').append(" G: " + points);
           });
 
-          _.each(data.assists, function(player){ 
-            $('p[data-horse="' + player[0] + '"]').append(" A: " + player[1]);
+          _.each(data.assists, function(points, player){ 
+            $('p[data-horse="' + player + '"]').append(" A: " + points);
           });
 
 

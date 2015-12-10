@@ -24,9 +24,14 @@
       return _.difference(eligibleHorses.horse_team.concat(eligibleHorses.other), used);
     }
 
+    String.prototype.capitalize = function() {
+      return this.charAt(0).toUpperCase() + this.slice(1);
+    }
+
     function shortenName(name) {
+      name = s(name).trim();
       var first = name.split(" ")[0][0] + "."
-      var last = name.split(" ")[1]
+      var last = name.split(" ")[1].toLowerCase().capitalize();
       return first + " " + last;
     }
 
@@ -182,10 +187,20 @@
     function top_points(players, goals)
     {
       players =  _.map(players, function(player) {
-        hash = {}; 
-        hash[shortenName(player)] =  
-        _.findWhere(goals, {"name": shortenName(player) }).points;
+        hash = {};
+  
+        lookup_player = _.findWhere(goals, {"name": shortenName(player) });
+        if (lookup_player === undefined || lookup_player === null)
+        {
+          console.log("Problem with: " + player);
+          console.log(shortenName(player));
+          hash[shortenName(player)] = 0;
+        }
+        else {
 
+          hash[shortenName(player)] = lookup_player.points;
+
+        }
         return hash;
       });
       
@@ -228,7 +243,7 @@
           
           goals = _.map(goals, function(value, key) { 
             var hsh = {};
-            hsh["name"] = key;
+            hsh["name"] = shortenName(key);
             hsh["points"] = value;
             return hsh;
           });
@@ -236,7 +251,7 @@
           assists = _.map(assists, function(value, key) { 
             var hsh = {};
       
-            hsh["name"] = key;
+            hsh["name"] = shortenName(key);
             hsh["points"] = value;
             return hsh;
           });

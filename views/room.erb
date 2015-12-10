@@ -225,12 +225,12 @@
 
         $.get("/scores.json", function(data) {
 
-          _.each(data.goals, function(points, player){ 
-            $('p[data-horse="' + player + '"]').append(" G: " + points);
+          _.each(data.goals, function(points, player){
+            $('p[data-horse="' + shortenName(player) + '"]').append(" G: " + points);
           });
 
-          _.each(data.assists, function(points, player){ 
-            $('p[data-horse="' + player + '"]').append(" A: " + points);
+          _.each(data.assists, function(points, player){
+            $('p[data-horse="' + shortenName(player) + '"]').append(" A: " + points);
           });
 
 

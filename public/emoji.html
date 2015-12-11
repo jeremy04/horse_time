@@ -18,11 +18,18 @@
     <script>
     jQuery.noConflict();
 
-    var clipboard = new Clipboard('.diabetus', {
-        target: function() {
-            return document.querySelector('div');
-        }
+    var clipboard = new Clipboard('#diabetus', {
+      target: function() {
+        return document.querySelector('#cat');
+      }
     });
+
+    var clipboard2 = new Clipboard('#murica', {
+      target: function() {
+        return document.querySelector('#america');
+      }
+    });
+
 
     var link = jQuery("#diabetus").attr("src");
     jQuery("#cat").append(link);

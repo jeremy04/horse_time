@@ -199,5 +199,5 @@ get '/random.json' do
 end
 
 get '/emoji' do
-  send_file "emoji.html"
+  send_file "public/emoji.html"
 end

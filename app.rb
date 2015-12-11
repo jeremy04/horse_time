@@ -197,3 +197,7 @@ get '/random.json' do
   pre = page.at '//pre'
   {:random => pre.children.first.text.split("\r\n\r\n").last.strip.to_f }.to_json
 end
+
+get '/emoji' do
+  send_file "emoji.html"
+end

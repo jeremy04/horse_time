@@ -51,9 +51,9 @@
           </button>
           <a class="navbar-brand" href="#">HORSE TIME</a>
         </div>
-        <% if @page == "lobby" %>
+        <% if @user %>
             <div id="navbar" class="navbar-collapse collapse">
-              <form class="navbar-form navbar-right" method="post" action="/leave_lobby" role="form">
+              <form class="navbar-form navbar-right" method="post" action="/logout" role="form">
                 <div class="form-group">
                   <button type="submit" class="btn btn-primary btn-lg" role="button">Leave Lobby</a>
                 </div>

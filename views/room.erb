@@ -65,6 +65,15 @@
             $("#" + message.player).css("color", "black");
             pickCount += 1;
             nextPlayer = pickOrder[pickCount];
+            
+            /* Remove when over ??? */
+            /*
+            if (pickCount > (draftOrder.length * 4))
+            {
+              $("#navbar").remove();
+            }
+            */
+
             jQuery.noConflict();
             $("input[name=\"" + nextPlayer + "\"]").autocomplete({
               orientation: "auto",

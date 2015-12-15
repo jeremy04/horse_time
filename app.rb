@@ -94,7 +94,7 @@ class RoomCodeValidator
 
 end
 
-post "/leave_lobby" do
+post "/logout" do
   name = JSON.parse(cookies[:horsetime])["name"]
   room_code = JSON.parse(cookies[:horsetime])["room_code"]
   players = JSON.parse(REDIS.hget(room_code, "players"))
@@ -119,7 +119,6 @@ get %r{/room/([A-Z0-9]{4})} do
     players = REDIS.hget(@room_code, "players")
     @players = JSON.parse(players).select { |p| p["status"] != 'inactive' }.map { |p| p["name"] }
     if REDIS.hget(@room_code, "ready") == "false"
-      @page = "lobby"
       erb :lobby
     elsif REDIS.hget(@room_code, "ready") == "true"
       @pick_count = REDIS.hget(@room_code, "pickCount")
@@ -127,9 +126,6 @@ get %r{/room/([A-Z0-9]{4})} do
       @pick_order = pick_order.generate_pick_order
       @roster = JSON.parse(players).map { |acc, h| { acc["name"] => acc["horses"] } }.reduce(:merge)
       erb :room
-    else
-      @page = "lobby"
-      erb :lobby
     end
   else
     redirect "/login"
@@ -196,8 +192,4 @@ get '/random.json' do
   page = agent.get("http://www.randomserver.dyndns.org/client/random.php?type=LIN&a=0&b=1&n=1")
   pre = page.at '//pre'
   {:random => pre.children.first.text.split("\r\n\r\n").last.strip.to_f }.to_json
-end
-
-get '/emoji' do
-  send_file "public/emoji.html"
 end

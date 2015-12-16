@@ -1,6 +1,14 @@
+<script>
+  $( document ).ready(function() {
+    <% if @room_code %>
+      $("#room_code").val("<%= @room_code %>");
+    <% end %>
+  });
+</script>
 <form class="navbar-form" method="post" action="/login">
   <div class="form-group">
-    <input type="text" name="room_code" placeholder="ENTER 4-LETTER CODE" class="form-control">
+
+    <input type="text" id="room_code" name="room_code" placeholder="ENTER 4-LETTER CODE" class="form-control">
   </div>
   <div class="form-group">
     <input type="text" name="name"  placeholder="ENTER YOUR NAME" class="form-control">
@@ -13,7 +21,7 @@
           $("#new_game").on("click", function(){
             $.post("/generate_room_code.json", function( data ) {
               console.log("Game started:" + data.room_code);
-              $( "#new_game" ).replaceWith("<p>" + data.room_code + "</p>");
+              $( "#new_game" ).replaceWith("<p><a href=\"/login?room_code=" + data.room_code + "\">" + data.room_code + "</a></p>");
               
             });
 
@@ -35,7 +43,7 @@
 <% @public_rooms.each do |room_code| %>
   <div class="row">
     <div class="col-md-4">
-      <a href="/room/<%= room_code %>"><%= room_code %></a>
+      <a href="/login?room_code=<%= room_code %>"><%= room_code %></a>
     </div>
   </div>
 <% end %>

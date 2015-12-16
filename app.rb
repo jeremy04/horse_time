@@ -111,6 +111,7 @@ post "/logout" do
   redirect "/"
 end
 
+
 get %r{/room/([A-Z0-9]{4})} do
   if RoomCodeValidator.cookies_match_redis(cookies[:horsetime])
     @room_code = JSON.parse(cookies[:horsetime])["room_code"]
@@ -138,6 +139,7 @@ get "/login" do
     room_code = JSON.parse(cookies[:horsetime])["room_code"]
     redirect "/room/#{room_code}"
   else
+    @room_code = params[:room_code]
     matches = REDIS.scan 0, match: "[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]"
     matches = matches.flatten.select { |s| s =~ /[A-Z0-9]{4}/}
     @public_rooms = matches
@@ -150,7 +152,7 @@ get '/' do
     room_code = JSON.parse(cookies[:horsetime])["room_code"]
     redirect "/room/#{room_code}"
   else
-    redirect "/login"
+    redirect "/login?#{params[:room_code]}"
   end
 end
 

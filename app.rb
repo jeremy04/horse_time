@@ -60,7 +60,7 @@ end
 
 post '/login' do
   params[:room_code] = params[:room_code].upcase
-  if RoomCodeValidator.room_has_players?(params[:room_code]) || !params[:name].blank? 
+  if params[:name].present? && params[:room_code].present? && RoomCodeValidator.room_has_players?(params[:room_code])
     players = JSON.parse(REDIS.hget(params[:room_code], "players"))
     params[:name] = params[:name].gsub(/\s/,"")
     players <<  { name: params[:name], status: 'new',

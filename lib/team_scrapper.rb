@@ -3,6 +3,16 @@ require 'pp'
 require 'chronic'
 require 'active_support/all'
 
+class AvailableGames
+  def self.games
+    agent = Mechanize.new
+    page = agent.get("http://www.nicetimeonice.com/api/seasons/20152016/games/")
+    json = JSON.parse(page.content)
+    games = json.select { |h| Date.parse(h["date"]) == Time.now.to_date }.map {|x| [x["homeTeam"],x["awayTeam"]] }.sort
+    games
+  end
+end
+
 class Scores
   def initialize(horse_team)
     @horse_team = horse_team

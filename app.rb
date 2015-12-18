@@ -26,6 +26,11 @@ end
 
 post '/generate_draft.json' do
   content_type :json
+  horse_team = params[:horse_team]
+  horses_per = params[:horses_per]
+
+  REDIS.hset(params[:room_code], "horse_team", horse_team)
+  REDIS.hset(params[:room_code], "horses_per", horses_per.to_i)
   REDIS.hset(params[:room_code], "ready", "true")
   players = JSON.parse(REDIS.hget(params[:room_code], "players")).shuffle(random: SecureRandom::RNG)
   REDIS.hset(params[:room_code], "pickCount", 1);
@@ -119,14 +124,19 @@ get %r{/room/([A-Z0-9]{4})} do
     @user = JSON.parse(cookies[:horsetime])["name"]
     players = REDIS.hget(@room_code, "players")
     @players = JSON.parse(players).select { |p| p["status"] != 'inactive' }.map { |p| p["name"] }
-    
+    @teams = AvailableGames.games
     if REDIS.hget(@room_code, "ready") == "false"
       erb :lobby
     elsif REDIS.hget(@room_code, "ready") == "true"
       @pick_count = REDIS.hget(@room_code, "pickCount")
-      pick_order = PickOrder.new(@players)
+      @horses_per = REDIS.hget(@room_code, "horses_per").to_i
+      rounds = @horses_per * 2
+      pick_order = PickOrder.new(@players, rounds)
       @pick_order = pick_order.generate_pick_order
-      @roster = JSON.parse(players).map { |acc, h| { acc["name"] => acc["horses"] } }.reduce(:merge)
+      @roster = JSON.parse(players).select { |p| p["status"] != 'inactive' }.map { |acc, h| { acc["name"] => acc["horses"] } }.reduce(:merge)
+      team_playing =  @teams.select { |team| team.first == REDIS.hget(@room_code, "horse_team") }.first
+      @horse_team = team_playing.first
+      @other_team = team_playing[1]
       erb :room
     end
   else

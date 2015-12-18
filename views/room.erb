@@ -113,13 +113,13 @@
 
           var currentPicks = roster[currentPlayer];
 
-          if (_.contains(eligibleHorses.other, selection) && currentPicks.other_team.length == 2)
+          if (_.contains(eligibleHorses.other, selection) && currentPicks.other_team.length == <%= @horses_per %>)
           {
             alert("You already have the limit for other team bro");
             return;
           }
 
-          if (_.contains(eligibleHorses.horse_team, selection) && currentPicks.horse_team.length == 2)
+          if (_.contains(eligibleHorses.horse_team, selection) && currentPicks.horse_team.length == <%= @horses_per %>)
           {
             alert("You already have the limit for penguins bro");
             return;
@@ -220,7 +220,7 @@
     }
 
 
-    $.get("/players.json", function( data ) {
+    $.get("/players.json", { horse_team: "<%= @horse_team %>" }, function( data ) {
         draftOrder = <%= @players.to_json %>;
         roster = <%= @roster.to_json %>;
 
@@ -232,7 +232,7 @@
         show_draft(pickOrder);
         generateDraft(draftOrder, pickOrder);
 
-        $.get("/scores.json", function(data) {
+        $.get("/scores.json", { horse_team: "<%= @horse_team %>" }, function(data) {
 
           _.each(data.goals, function(points, player){
             $('p[data-horse="' + shortenName(player) + '"]').append(" G: " + points);
@@ -246,7 +246,7 @@
         });
 
 
-        $.get("/scores.json", function(data) {
+        $.get("/scores.json", { horse_team: "<%= @horse_team %>" }, function(data) {
           var goals = data.goals;
           var assists = data.assists;
           
@@ -275,7 +275,7 @@
           });
 
 
-          $.get("/players.json", function(data) {
+          $.get("/players.json", { horse_team: "<%= @horse_team %>" }, function(data) {
 
 
             _.each(top_points(data.horse_team, points), function(player) {
@@ -315,11 +315,11 @@
 <div class="col-md-4" id="tophorses">
   <h2>Leading Scorers</h2>
   <div id="top_horses">
-    <h3>Penguins</h3>
+    <h3><%= @horse_team %></h3>
     <div id="horse_team_scorers">
     </div>
     <BR />
-    <h3>Other team</h3>
+    <h3><%= @other_team %></h3>
     <div id="other_team_scorers">
     </div>
   </div>

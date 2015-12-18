@@ -9,8 +9,13 @@
     $("#start_game").on("click", function(event){
       console.log("CLICKED");
       event.preventDefault();
-      
-      $.post('/generate_draft.json', { room_code: "<%= @room_code %>" }, 
+      var horse_team = $("#horse_team").val();
+      var horses_per = $("#horses_per").val();
+
+      $.post('/generate_draft.json', { horses_per: horses_per, 
+                                       horse_team: horse_team, 
+                                       room_code: "<%= @room_code %>" 
+                                     }, 
         function(returnedData){
           console.log("Page reloading");
        
@@ -90,6 +95,28 @@
 <% if @manager == @user %>
 <div class="row">
   <div class="col-md-4">
+    <p>
+      <form role="form">
+        <div class="form-group">
+          <label for="sel1">Select team (select one):</label>
+          <select class="form-control" id="horse_team">
+            <% @teams.each do |team| %>
+              <option value="<%= team.first %>"><%= team.first %> vs. <%= team[1] %></option>
+            <% end %>
+          </select>
+          <label for="sel1">Horses per team:</label>
+          <select class="form-control" id="horses_per">
+              <option selected value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+          </select>
+
+        </div>
+      </form>
+    </p>
+
     <p><a class="btn btn-default" id="start_game" role="button">EVERYONES IN GUYS</a></p>
   </div>
 </div>

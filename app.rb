@@ -1,7 +1,6 @@
 # A Sinatra app for displaying one's resume in multiple formats
 require 'rubygems'
 require 'sinatra'
-require 'faye'
 require './lib/team_scrapper'
 require './lib/pick_order'
 require "./lib/rng.rb"
@@ -190,18 +189,7 @@ end
 get '/players.json' do
   content_type :json
   horse_team = params[:horse_team] || "Pittsburgh Penguins"
-
-  team_identify = TeamIdentify.new(horse_team)
-  horse_url, other_url = team_identify.determine_team
-
-  scrapper = TeamScrapper.new
-  scrapper.visit_roster("http://www2.dailyfaceoff.com#{horse_url}")
-  penguins = scrapper.scrape_players
-
-  scrapper = TeamScrapper.new
-  scrapper.visit_roster("http://www2.dailyfaceoff.com#{other_url}")
-  other_team = scrapper.scrape_players
-  {:horse_team => penguins[:players].uniq, :other => other_team[:players].uniq }.to_json
+  ActiveRoster.new(horse_team).scrape.to_json
 end
 
 get '/random.json' do

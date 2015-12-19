@@ -4,7 +4,4 @@ Bundler.setup
 
 require './app'
 
-use Faye::RackAdapter, :mount => '/faye', :timeout => 25
-
-
 run Sinatra::Application

@@ -4,11 +4,12 @@
   var pickCount = <%= @pick_count %>;
   var subscribed = true;
   var spareHorses = [];
+  var pubnub = PUBNUB({
+      subscribe_key: 'sub-c-ce8ecf20-6eb2-11e5-ba34-02ee2ddab7fe', 
+      publish_key: 'pub-c-af81b32e-d0dd-48a3-bac3-fbf02d262285'    
+    });
 
   $( document ).ready(function() {
-
-    var client = new Faye.Client('/faye')
-    client.disable('websocket');
 
     function getCookieValue(a, b) {
       b = document.cookie.match('(^|;)\\s*' + a + '\\s*=\\s*([^;]+)');
@@ -28,14 +29,6 @@
       return this.charAt(0).toUpperCase() + this.slice(1);
     }
 
-    function shortenName(name) {
-      name = s(name).trim();
-      var first = name.split(" ")[0][0] + "."
-      var last = name.split(" ")[1].toLowerCase().capitalize();
-      return first + " " + last;
-    }
-
-
     function generateDraft(draftOrder, pickOrder) 
     {
       $("#" + pickOrder[pickCount]).css("color","red");
@@ -43,7 +36,7 @@
       _.each(draftOrder, function(player) {
         
         _.each(roster[player]["horse_team"].concat(roster[player]["other_team"]), function(horse) {
-          $("#horses_selected #" + player + "_horses").append("<p data-horse='" + shortenName(horse) + "' class='indent'>" + horse + "</p>");
+          $("#horses_selected #" + player + "_horses").append("<p data-horse='" + horse + "' class='indent'>" + horse + "</p>");
         });
         
         $("input[name=\"" + player + "\"]").keypress(function (e) {
@@ -53,52 +46,52 @@
         });
 
         if(subscribed) {
-          client.subscribe('/horse_selected', function(message) {          
-            console.log(message.player +" picked " + message.horse);
+
+          pubnub.subscribe({
+            channel: 'horse_selected',
+            message: function(message){
+              console.log(message.player +" picked " + message.horse);
+              $("#horses_selected #" + message.player + "_horses").append("<p class='indent'>" + message.horse + "</p>");
+
+              spareHorses = _.without(spareHorses, message.horse);
+              $("#draft" + message.player).css("display", "none");
+              $("input[name=\"" + message.player + "\"]").css("display", "none");
+              $("input[name=\"" + message.player + "\"]").val('');
+              $("#" + message.player).css("color", "black");
+              pickCount += 1;
+              nextPlayer = pickOrder[pickCount];
+              jQuery.noConflict();
+              $("input[name=\"" + nextPlayer + "\"]").autocomplete({
+                orientation: "auto",
+                minChars: '2',
+                lookup: spareHorses,
+                onSelect: function() { return; }
+              });
+              
+              var ht_cookie = JSON.parse(unescape(getCookieValue("horsetime")));
+
+              if (ht_cookie.name == nextPlayer) {
+                $("#draft" + nextPlayer).css("display", "inline");
+                $("input[name=\"" + nextPlayer + "\"]").css("display", "inline");                
+              }
+
+              if (message.player == nextPlayer)
+              {
+                $("#" + nextPlayer).css("color", "green");
+              }
+              else
+              {
+                $("#" + nextPlayer).css("color", "red");  
+              }
+
+            },
+            error: function (error) {
+              // Handle error here
+              console.log(JSON.stringify(error));
+            }
             
-            $("#horses_selected #" + message.player + "_horses").append("<p class='indent'>" + message.horse + "</p>");
-
-            spareHorses = _.without(spareHorses, message.horse);
-            $("#draft" + message.player).css("display", "none");
-            $("input[name=\"" + message.player + "\"]").css("display", "none");
-            $("input[name=\"" + message.player + "\"]").val('');
-            $("#" + message.player).css("color", "black");
-            pickCount += 1;
-            nextPlayer = pickOrder[pickCount];
-            
-            /* Remove when over ??? */
-            /*
-            if (pickCount > (draftOrder.length * 4))
-            {
-              $("#navbar").remove();
-            }
-            */
-
-            jQuery.noConflict();
-            $("input[name=\"" + nextPlayer + "\"]").autocomplete({
-              orientation: "auto",
-              minChars: '2',
-              lookup: spareHorses,
-              onSelect: function() { return; }
-            });
-            
-
-            var ht_cookie = JSON.parse(unescape(getCookieValue("horsetime")));
-
-            if (ht_cookie.name == nextPlayer) {
-              $("#draft" + nextPlayer).css("display", "inline");
-              $("input[name=\"" + nextPlayer + "\"]").css("display", "inline");                
-            }
-
-            if (message.player == nextPlayer)
-            {
-              $("#" + nextPlayer).css("color", "green");
-            }
-            else
-            {
-              $("#" + nextPlayer).css("color", "red");  
-            }
           });
+
         }
         
         subscribed = false;
@@ -150,9 +143,12 @@
                 console.log(returnedData);
           });
 
-          client.publish('/horse_selected', {
-            player: currentPlayer,
-            horse: selection
+          pubnub.publish({
+             channel: 'horse_selected',        
+             message:  {
+                        player: currentPlayer,
+                        horse: selection
+                       }
           });
 
 
@@ -198,16 +194,15 @@
       players =  _.map(players, function(player) {
         hash = {};
   
-        lookup_player = _.findWhere(goals, {"name": shortenName(player) });
+        lookup_player = _.findWhere(goals, {"name": player });
         if (lookup_player === undefined || lookup_player === null)
         {
           console.log("Problem with: " + player);
-          console.log(shortenName(player));
-          hash[shortenName(player)] = 0;
+          hash[player] = 0;
         }
         else {
 
-          hash[shortenName(player)] = lookup_player.points;
+          hash[player] = lookup_player.points;
 
         }
         return hash;
@@ -218,7 +213,6 @@
       });
       return players.slice(0, 5);
     }
-
 
     $.get("/players.json", { horse_team: "<%= @horse_team %>" }, function( data ) {
         draftOrder = <%= @players.to_json %>;
@@ -235,11 +229,11 @@
         $.get("/scores.json", { horse_team: "<%= @horse_team %>" }, function(data) {
 
           _.each(data.goals, function(points, player){
-            $('p[data-horse="' + shortenName(player) + '"]').append(" G: " + points);
+            $('p[data-horse="' + player + '"]').append(" G: " + points);
           });
 
           _.each(data.assists, function(points, player){
-            $('p[data-horse="' + shortenName(player) + '"]').append(" A: " + points);
+            $('p[data-horse="' + player + '"]').append(" A: " + points);
           });
 
 
@@ -252,7 +246,7 @@
           
           goals = _.map(goals, function(value, key) { 
             var hsh = {};
-            hsh["name"] = shortenName(key);
+            hsh["name"] = key;
             hsh["points"] = value;
             return hsh;
           });
@@ -260,7 +254,7 @@
           assists = _.map(assists, function(value, key) { 
             var hsh = {};
       
-            hsh["name"] = shortenName(key);
+            hsh["name"] = key;
             hsh["points"] = value;
             return hsh;
           });

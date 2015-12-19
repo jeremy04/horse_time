@@ -135,8 +135,13 @@ get %r{/room/([A-Z0-9]{4})} do
       @pick_order = pick_order.generate_pick_order
       @roster = JSON.parse(players).select { |p| p["status"] != 'inactive' }.map { |acc, h| { acc["name"] => acc["horses"] } }.reduce(:merge)
       team_playing =  @teams.select { |team| team.first == REDIS.hget(@room_code, "horse_team") }.first
-      @horse_team = team_playing.first if team_playing
-      @other_team = team_playing[1] if team_playing
+      if team_playing
+        @horse_team = team_playing.first
+        @other_team = team_playing[1]
+      else
+        @horse_team = "Pittsburgh Penguins"
+        @other_team = "Other team"
+      end
       erb :room
     end
   else

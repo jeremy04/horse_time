@@ -8,6 +8,7 @@ require 'json'
 require 'sinatra/contrib/all'
 require 'active_support/all'
 require 'pp'
+require './cat_facts'
 
 set :bind, '0.0.0.0'
 
@@ -198,4 +199,8 @@ get '/random.json' do
   page = agent.get("http://www.randomserver.dyndns.org/client/random.php?type=LIN&a=0&b=1&n=1")
   pre = page.at '//pre'
   {:random => pre.children.first.text.split("\r\n\r\n").last.strip.to_f }.to_json
+end
+
+get '/cat_fact' do
+  "#{CatFacts.new.random_fact}"
 end

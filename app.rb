@@ -188,13 +188,13 @@ get '/scores.json' do
   content_type :json
   horse_team = params[:horse_team] || "Pittsburgh Penguins"
   room_code = params[:room_code]
-  if REDIS.hexists("scores_" + horse_team + "_" + room_code, "scores")
+  if REDIS.hexists("scores_" + horse_team.gsub(/\s/,"") + "_" + room_code, "scores")
     pp "Scores cached #{room_code}"
-    return REDIS.hget("scores_" + horse_team + "_" + room_code, "scores")
+    return REDIS.hget("scores_" + horse_team.gsub(/\s/,"") + "_" + room_code, "scores")
   else
     scores = Scores.new(horse_team).goals
-    REDIS.hset("scores_" + horse_team + "_" + room_code, "scores", JSON.dump(scores))
-    REDIS.expire("scores_" + horse_team + "_" + room_code, 8)
+    REDIS.hset("scores_" + horse_team.gsub(/\s/,"") + "_" + room_code, "scores", JSON.dump(scores))
+    REDIS.expire("scores_" + horse_team .gsub(/\s/,"")+ "_" + room_code, 8)
     return scores.to_json
   end
 end
@@ -203,13 +203,14 @@ get '/players.json' do
   content_type :json
   horse_team = params[:horse_team] || "Pittsburgh Penguins"
   room_code = params[:room_code]
-  if REDIS.hexists(horse_team + "_" + room_code, "active_roster")
+  
+  if REDIS.hexists(horse_team.gsub(/\s/,"")  + "_" + room_code, "active_roster")
     pp "Roster cached: #{horse_team} #{room_code}"
-    return REDIS.hget(horse_team + "_" + room_code, "active_roster")
+    return REDIS.hget(horse_team.gsub(/\s/,"")  + "_" + room_code, "active_roster")
   else
     roster = ActiveRoster.new(horse_team).scrape
-    REDIS.hset(horse_team + "_" + room_code, "active_roster", JSON.dump(roster))
-    REDIS.expire(horse_team + "_" + room_code, 5 * 60 * 60)
+    REDIS.hset(horse_team.gsub(/\s/,"") + "_" + room_code, "active_roster", JSON.dump(roster))
+    REDIS.expire(horse_team.gsub(/\s/,"") + "_" + room_code, 5 * 60 * 60)
     return roster.to_json
   end
 end

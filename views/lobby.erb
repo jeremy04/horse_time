@@ -1,79 +1,79 @@
 <script>
-    var pubnub = PUBNUB({
-      subscribe_key: 'sub-c-ce8ecf20-6eb2-11e5-ba34-02ee2ddab7fe', 
-      publish_key: 'pub-c-af81b32e-d0dd-48a3-bac3-fbf02d262285'    
-    });
+var pubnub = PUBNUB({
+  subscribe_key: 'sub-c-ce8ecf20-6eb2-11e5-ba34-02ee2ddab7fe', 
+  publish_key: 'pub-c-af81b32e-d0dd-48a3-bac3-fbf02d262285'    
+});
 
-  $( document ).ready(function() {
-    
-    $("#start_game").on("click", function(event){
-      event.preventDefault();
-      var horse_team = $("#horse_team").val();
-      var horses_per = $("#horses_per").val();
+$(document).ready(function() {
+  
+  $("#start_game").on("click", function(event){
+    event.preventDefault();
+    var horse_team = $("#horse_team").val();
+    var horses_per = $("#horses_per").val();
 
-      $.post('/generate_draft.json', { horses_per: horses_per, 
-                                       horse_team: horse_team, 
-                                       room_code: "<%= @room_code %>" 
-                                     }, 
-        function(returnedData){
-          console.log("Page reloading");
-          window.location.reload();
-          pubnub.publish({
-            channel: 'game_on',        
-            message:  { game: "start" },
-            callback : function(m){}
-          });
-      });
-
-
-    });
-
-    pubnub.publish({
-      channel: 'signon',        
-      message:  { user: "<%= @user %>" },
-      callback : function(m){}
-    });
-
-    pubnub.subscribe({
-      channel: 'game_on',
-      message: function(message){
+    $.post('/generate_draft.json', { horses_per: horses_per, 
+                                     horse_team: horse_team, 
+                                     room_code: "<%= @room_code %>" 
+                                   }, 
+      function(returnedData){
         console.log("Page reloading");
         window.location.reload();
-      },
-      error: function (error) {
-        console.log(JSON.stringify(error));
-      }
+        pubnub.publish({
+          channel: 'game_on',        
+          message:  { game: "start" },
+          callback : function(m){}
+        });
     });
- 
-    pubnub.subscribe({
-      channel: 'signon',
-      message: function(message){
-
-        if($("#" + message.user).length == 0) {
-          console.log("Adding");
-          $("#whos_online").append("<div id=\"" 
-            + message.user + "\" class=\"row\">" 
-            + message.user
-            + "<img id=\"" + message.user 
-            + "_img\"" 
-            + "src=\"/img/purple_devil.png\" width=\"5%\" height=\"5%\">"
-            + "</div>");
-        }
-        else {
-          $("#" + message.user + "_img").css("display", "inline");
-        }
-      },
-      connect: pubnub.publish({
-               channel: 'signon',        
-               message:  { user: "<%= @user %>" }
-            }),
-      error: function (error) {
-        console.log(JSON.stringify(error));
-      }
-    });    
 
 
   });
+
+  pubnub.publish({
+    channel: 'signon',        
+    message:  { user: "<%= @user %>" },
+    callback : function(m){}
+  });
+
+  pubnub.subscribe({
+    channel: 'game_on',
+    message: function(message){
+      console.log("Page reloading");
+      window.location.reload();
+    },
+    error: function (error) {
+      console.log(JSON.stringify(error));
+    }
+  });
+
+  pubnub.subscribe({
+    channel: 'signon',
+    message: function(message){
+
+      if($("#" + message.user).length == 0) {
+        console.log("Adding");
+        $("#whos_online").append("<div id=\"" 
+          + message.user + "\" class=\"row\">" 
+          + message.user
+          + "<img id=\"" + message.user 
+          + "_img\"" 
+          + "src=\"/img/purple_devil.png\" width=\"5%\" height=\"5%\">"
+          + "</div>");
+      }
+      else {
+        $("#" + message.user + "_img").css("display", "inline");
+      }
+    },
+    connect: pubnub.publish({
+             channel: 'signon',        
+             message:  { user: "<%= @user %>" }
+          }),
+    error: function (error) {
+      console.log(JSON.stringify(error));
+    }
+  });    
+
+
+});
 
 </script>
 <div class="row">

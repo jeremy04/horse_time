@@ -1,11 +1,4 @@
-<script>
-  $( document ).ready(function() {
-    <% if @room_code %>
-      $("#room_code").val("<%= @room_code %>");
-    <% end %>
-  });
-</script>
-<form class="navbar-form" method="post" action="/login">
+<form id="login" class="navbar-form" method="post" action="/login">
   <div class="form-group">
 
     <input type="text" id="room_code" name="room_code" placeholder="ENTER 4-LETTER CODE" class="form-control">
@@ -13,20 +6,28 @@
   <div class="form-group">
     <input type="text" name="name"  placeholder="ENTER YOUR NAME" class="form-control">
   </div>
-  <button type="submit" class="btn btn-success">PLAY</button>
+  <button type="submit" id="play" class="btn btn-success">PLAY</button>
 </form>
         
 <script>
-        $( document ).ready(function() {
-          $("#new_game").on("click", function(){
-            $.post("/generate_room_code.json", function( data ) {
-              console.log("Game started:" + data.room_code);
-              $( "#new_game" ).replaceWith("<p><a href=\"/login?room_code=" + data.room_code + "\">" + data.room_code + "</a></p>");
-              
-            });
+$(document).ready(function() {
+  <% if @room_code %>
+    $("#room_code").val("<%= @room_code %>");
+  <% end %>
+  
+  $("#login").submit(function(){
+    $("#play").prop("disabled",true);
+  });
 
-          });
-        });
+  $("#new_game").on("click", function(){
+    $.post("/generate_room_code.json", function( data ) {
+      console.log("Game started:" + data.room_code);
+      $( "#new_game" ).replaceWith("<p><a href=\"/login?room_code=" + data.room_code + "\">" + data.room_code + "</a></p>");
+      
+    });
+
+  });
+});
 </script>
 
 

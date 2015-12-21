@@ -9,153 +9,153 @@
       publish_key: 'pub-c-af81b32e-d0dd-48a3-bac3-fbf02d262285'    
     });
 
-  $( document ).ready(function() {
+  function getCookieValue(a, b) {
+    b = document.cookie.match('(^|;)\\s*' + a + '\\s*=\\s*([^;]+)');
+    return b ? b.pop() : '';
+  }
 
-    function getCookieValue(a, b) {
-      b = document.cookie.match('(^|;)\\s*' + a + '\\s*=\\s*([^;]+)');
-      return b ? b.pop() : '';
+  function horsesLeft(roster, eligibleHorses)
+  {
+    used = _.flatten(_.map(_.values(roster), function(obj) { 
+      return obj.horse_team.concat(obj.other_team) 
+    }));
+
+    return _.difference(eligibleHorses.horse_team.concat(eligibleHorses.other), used);
+  }
+
+  function updateRound(message)
+  {
+    console.log(message.player +" picked " + message.horse);
+    $("#horses_selected #" + message.player + "_horses").append("<p class='indent'>" + message.horse + "</p>");
+
+    spareHorses = _.without(spareHorses, message.horse);
+    $("#draft" + message.player).css("display", "none");
+    $("input[name=\"" + message.player + "\"]").css("display", "none");
+    $("input[name=\"" + message.player + "\"]").val('');
+    $("#" + message.player).css("color", "black");
+    pickCount += 1;
+    nextPlayer = pickOrder[pickCount];
+    jQuery.noConflict();
+    $("input[name=\"" + nextPlayer + "\"]").autocomplete({
+      orientation: "auto",
+      minChars: '2',
+      lookup: spareHorses,
+      onSelect: function() { return; }
+    });
+    
+    var ht_cookie = JSON.parse(unescape(getCookieValue("horsetime")));
+
+    if (ht_cookie.name == nextPlayer) {
+      $("#draft" + nextPlayer).css("display", "inline");
+      $("#draft" + nextPlayer).prop("disabled",false);
+      $("input[name=\"" + nextPlayer + "\"]").css("display", "inline");                
     }
 
-    function spareHorses(roster, eligibleHorses)
+    if (message.player == nextPlayer)
     {
-      used = _.flatten(_.map(_.values(roster), function(obj) { 
-        return obj.horse_team.concat(obj.other_team) 
-      }));
- 
-      return _.difference(eligibleHorses.horse_team.concat(eligibleHorses.other), used);
+      $("#" + nextPlayer).css("color", "green");
     }
-
-    String.prototype.capitalize = function() {
-      return this.charAt(0).toUpperCase() + this.slice(1);
-    }
-
-    function generateDraft(draftOrder, pickOrder) 
+    else
     {
-      $("#" + pickOrder[pickCount]).css("color","red");
+      $("#" + nextPlayer).css("color", "red");  
+    }
+  }
+
+  function generateDraft(draftOrder, pickOrder) 
+  {
+    $("#" + pickOrder[pickCount]).css("color","red");
+    
+    _.each(draftOrder, function(player) {
       
-      _.each(draftOrder, function(player) {
-        
-        _.each(roster[player]["horse_team"].concat(roster[player]["other_team"]), function(horse) {
-          $("#horses_selected #" + player + "_horses").append("<p data-horse='" + horse + "' class='indent'>" + horse + "</p>");
-        });
-        
-        $("input[name=\"" + player + "\"]").keypress(function (e) {
-          if (e.which == 13) {
-             $("#draft" + player).click();
-          }
-        });
-
-        if(subscribed) {
-
-          pubnub.subscribe({
-            channel: 'horse_selected',
-            message: function(message){
-              console.log(message.player +" picked " + message.horse);
-              $("#horses_selected #" + message.player + "_horses").append("<p class='indent'>" + message.horse + "</p>");
-
-              spareHorses = _.without(spareHorses, message.horse);
-              $("#draft" + message.player).css("display", "none");
-              $("input[name=\"" + message.player + "\"]").css("display", "none");
-              $("input[name=\"" + message.player + "\"]").val('');
-              $("#" + message.player).css("color", "black");
-              pickCount += 1;
-              nextPlayer = pickOrder[pickCount];
-              jQuery.noConflict();
-              $("input[name=\"" + nextPlayer + "\"]").autocomplete({
-                orientation: "auto",
-                minChars: '2',
-                lookup: spareHorses,
-                onSelect: function() { return; }
-              });
-              
-              var ht_cookie = JSON.parse(unescape(getCookieValue("horsetime")));
-
-              if (ht_cookie.name == nextPlayer) {
-                $("#draft" + nextPlayer).css("display", "inline");
-                $("input[name=\"" + nextPlayer + "\"]").css("display", "inline");                
-              }
-
-              if (message.player == nextPlayer)
-              {
-                $("#" + nextPlayer).css("color", "green");
-              }
-              else
-              {
-                $("#" + nextPlayer).css("color", "red");  
-              }
-
-            },
-            error: function (error) {
-              // Handle error here
-              console.log(JSON.stringify(error));
-            }
-            
-          });
-
+      var fullRoster = roster[player]["horse_team"].concat(roster[player]["other_team"]);
+     
+      _.each(fullRoster, function(horse) {
+        $("#horses_selected #" + player + "_horses").append("<p data-horse='" + horse + "' class='indent'>" + horse + "</p>");
+      });
+      
+      $("input[name=\"" + player + "\"]").keypress(function (e) {
+        if (e.which == 13) {
+           $("#draft" + player).click();
         }
-        
-        subscribed = false;
+      });
 
-        $("#draft" + player).on("click", function(){
-          
-          var currentPlayer = pickOrder[pickCount];
+      if(subscribed) {
 
-          var selection = $("input[name=\"" + currentPlayer + "\"]").val();
-          if (selection == "") { alert("Select a horse bro!"); return; }
-          if (!_.contains(spareHorses, selection)) { alert("That's not a horse, bro"); return; }
-
-          var currentPicks = roster[currentPlayer];
-
-          if (_.contains(eligibleHorses.other, selection) && currentPicks.other_team.length == <%= @horses_per %>)
-          {
-            alert("You already have the limit for other team bro");
-            return;
-          }
-
-          if (_.contains(eligibleHorses.horse_team, selection) && currentPicks.horse_team.length == <%= @horses_per %>)
-          {
-            alert("You already have the limit for penguins bro");
-            return;
-          }
-
-          // Validation pass, add to my picks!
-
-          if(_.contains(eligibleHorses.other, selection)) {
-            currentPicks.other_team.push(selection);
-            var other_team_horse = selection;
-          }
-          else
-          {
-            currentPicks.horse_team.push(selection);
-            var primary_team_horse = selection;
-          }
-
-          // UPDATE REDIS
-          roster[currentPlayer] = currentPicks;
-          
-          $.post('/update_pick.json', 
-            { room_code: "<%= @room_code %>",
-              horse_team: primary_team_horse, 
-              other_team: other_team_horse, 
-              name: currentPlayer
-            }, 
-              function(returnedData){
-                console.log(returnedData);
-          });
-
-          pubnub.publish({
-             channel: 'horse_selected',        
-             message:  {
-                        player: currentPlayer,
-                        horse: selection
-                       }
-          });
-
-
+        pubnub.subscribe({
+          channel: 'horse_selected',
+          message: updateRound,
+          error: function (error) { console.log(JSON.stringify(error));}
         });
+
+      }
+      
+      subscribed = false;
+
+      $("#draft" + player).on("click", function(){
+        
+        var currentPlayer = pickOrder[pickCount];
+        /* Validations */
+
+        var selection = $("input[name=\"" + currentPlayer + "\"]").val();
+        if (selection == "") { alert("Select a horse bro!"); return; }
+        if (!_.contains(spareHorses, selection)) { alert("That's not a horse, bro"); return; }
+
+        var currentPicks = roster[currentPlayer];
+
+        if (_.contains(eligibleHorses.other, selection) && currentPicks.other_team.length == <%= @horses_per %>)
+        {
+          alert("You already have the limit for other team bro");
+          return;
+        }
+
+        if (_.contains(eligibleHorses.horse_team, selection) && currentPicks.horse_team.length == <%= @horses_per %>)
+        {
+          alert("You already have the limit for penguins bro");
+          return;
+        }
+
+        /* End of Validations */
+
+        $(this).prop("disabled",true);
+
+        if(_.contains(eligibleHorses.other, selection)) {
+          currentPicks.other_team.push(selection);
+          var other_team_horse = selection;
+        }
+        else
+        {
+          currentPicks.horse_team.push(selection);
+          var primary_team_horse = selection;
+        }
+
+        // UPDATE REDIS
+        roster[currentPlayer] = currentPicks;
+        
+        $.post('/update_pick.json', 
+          { room_code: "<%= @room_code %>",
+            horse_team: primary_team_horse, 
+            other_team: other_team_horse, 
+            name: currentPlayer
+          }, 
+            function(returnedData){
+              console.log(returnedData);
+        });
+
+        pubnub.publish({
+           channel: 'horse_selected',        
+           message:  {
+                      player: currentPlayer,
+                      horse: selection
+                     }
+        });
+
 
       });
-    }
+
+    });
+}
+
+  $( document ).ready(function() {
 
     function show_draft(pickOrder) {
       randomPlayers = <%= @players.to_json %>;
@@ -219,7 +219,7 @@
         roster = <%= @roster.to_json %>;
 
         eligibleHorses = data;
-        spareHorses = spareHorses(roster, eligibleHorses);
+        spareHorses = horsesLeft(roster, eligibleHorses);
 
         pickOrder = <%= @pick_order.to_json %>;
 
@@ -270,7 +270,6 @@
 
 
           $.get("/players.json", { horse_team: "<%= @horse_team %>" }, function(data) {
-
 
             _.each(top_points(data.horse_team, points), function(player) {
               $("#horse_team_scorers").append("<p class='indent'>" + _.keys(player)[0] + " : " +  _.values(player)[0] + "</p>");

@@ -13,10 +13,25 @@ require './cat_facts'
 set :bind, '0.0.0.0'
 
 configure do
-    require 'uri'
-    require 'redis'
-    uri = URI.parse(ENV["REDISCLOUD_URL"] || "http://127.0.0.1:6379")
-    REDIS = Redis.new(:host => uri.host, :port => uri.port, :password => uri.password)
+  require 'uri'
+  require 'redis'
+  uri = URI.parse(ENV["REDISCLOUD_URL"] || "http://127.0.0.1:6379")
+  REDIS = Redis.new(:host => uri.host, :port => uri.port, :password => uri.password)
+end
+
+class RoomCodeValidator
+
+  def self.room_has_players?(room_code)
+    REDIS.hget(room_code, "players") && REDIS.hget(room_code, "ready") == "false"
+  end
+
+  def self.cookies_match_redis(cookie)
+    cookie = cookie || {}.to_json
+    room_code = JSON.parse(cookie)["room_code"]
+    name      = JSON.parse(cookie)["name"]
+    cookie && REDIS.hexists(room_code, "players")
+  end
+
 end
 
 def generate_activation_code(size = 4)
@@ -28,7 +43,6 @@ post '/generate_draft.json' do
   content_type :json
   horse_team = params[:horse_team]
   horses_per = params[:horses_per]
-
   REDIS.hset(params[:room_code], "horse_team", horse_team)
   REDIS.hset(params[:room_code], "horses_per", horses_per.to_i)
   REDIS.hset(params[:room_code], "ready", "true")
@@ -84,34 +98,22 @@ post '/login' do
   redirect to('/')
 end
 
-class RoomCodeValidator
-
-  def self.room_has_players?(room_code)
-    REDIS.hget(room_code, "players") && REDIS.hget(room_code, "ready") == "false"
-  end
-
-  def self.cookies_match_redis(cookie)
-    cookie = cookie || {}.to_json
-    room_code = JSON.parse(cookie)["room_code"]
-    name      = JSON.parse(cookie)["name"]
-    cookie && REDIS.hexists(room_code, "players")
-  end
-
-end
-
 post "/logout" do
   name = JSON.parse(cookies[:horsetime])["name"]
   room_code = JSON.parse(cookies[:horsetime])["room_code"]
   players = JSON.parse(REDIS.hget(room_code, "players"))
-  if name == REDIS.hget(room_code, "room_manager")
-    REDIS.del room_code
-  end
+
   players = players.map do |player|
     player["status"] = "inactive" if player["name"] == name
     player
   end
 
   REDIS.hset(room_code, "players", JSON.dump(players))
+  
+  if name == REDIS.hget(room_code, "room_manager")
+    REDIS.del room_code
+  end
+
   response.delete_cookie "horsetime"
   redirect "/"
 end

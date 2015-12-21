@@ -8,6 +8,10 @@ $(document).ready(function() {
   
   $("#start_game").on("click", function(event){
     event.preventDefault();
+    
+    $(this).attr("disabled", "disabled");
+    $(this).removeAttr("href");
+
     var horse_team = $("#horse_team").val();
     var horses_per = $("#horses_per").val();
 

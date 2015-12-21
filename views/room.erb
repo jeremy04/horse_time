@@ -226,7 +226,7 @@
       return players.slice(0, 5);
     }
 
-    $.get("/players.json", { horse_team: "<%= @horse_team %>" }, function( data ) {
+    $.get("/players.json", { horse_team: "<%= @horse_team %>", room_code: "<%= @room_code %>" }, function( data ) {
         draftOrder = <%= @players.to_json %>;
         roster = <%= @roster.to_json %>;
 
@@ -238,7 +238,7 @@
         show_draft(pickOrder);
         generateDraft(draftOrder, pickOrder);
 
-        $.get("/scores.json", { horse_team: "<%= @horse_team %>" }, function(data) {
+        $.get("/scores.json", { horse_team: "<%= @horse_team %>", room_code: "<%= @room_code %>" }, function(data) {
 
           _.each(data.goals, function(points, player){
             $('p[data-horse="' + player + '"]').append(" G: " + points);
@@ -252,7 +252,7 @@
         });
 
 
-        $.get("/scores.json", { horse_team: "<%= @horse_team %>" }, function(data) {
+        $.get("/scores.json", { horse_team: "<%= @horse_team %>", room_code: "<%= @room_code %>" }, function(data) {
           var goals = data.goals;
           var assists = data.assists;
           
@@ -281,7 +281,7 @@
           });
 
 
-          $.get("/players.json", { horse_team: "<%= @horse_team %>" }, function(data) {
+          $.get("/players.json", { horse_team: "<%= @horse_team %>", room_code: "<%= @room_code %>" }, function(data) {
 
             _.each(top_points(data.horse_team, points), function(player) {
               $("#horse_team_scorers").append("<p class='indent'>" + _.keys(player)[0] + " : " +  _.values(player)[0] + "</p>");

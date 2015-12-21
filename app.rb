@@ -194,7 +194,7 @@ get '/scores.json' do
   else
     scores = Scores.new(horse_team).goals
     REDIS.hset("scores_" + horse_team + "_" + room_code, "scores", JSON.dump(scores))
-    REDIS.expire("scores_" + horse_team, 8)
+    REDIS.expire("scores_" + horse_team + "_" + room_code, 8)
     return scores.to_json
   end
 end

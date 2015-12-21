@@ -66,6 +66,7 @@ post '/update_pick.json' do
   pickCount = REDIS.hget(params[:room_code], "pickCount").to_i
   pickCount+=1
   REDIS.hset(params[:room_code], "pickCount", pickCount)
+  REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * 4) 
   ["Updated"].to_json
 end
 
@@ -128,7 +129,8 @@ get %r{/room/([A-Z0-9]{4})} do
     @teams = AvailableGames.games
     if REDIS.hget(@room_code, "ready") == "false"
       erb :lobby
-    elsif REDIS.hget(@room_code, "ready") == "true"
+    elsif REDIS.hget(@room_code, "ready") == "true" || REDIS.hget(@room_code, "ready") == "over"
+      @draft_over = REDIS.hget(@room_code, "ready") == "over"
       @pick_count = REDIS.hget(@room_code, "pickCount")
       @horses_per = REDIS.hget(@room_code, "horses_per").to_i
       rounds = @horses_per * 2

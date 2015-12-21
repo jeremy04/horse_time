@@ -9,6 +9,11 @@
       publish_key: 'pub-c-af81b32e-d0dd-48a3-bac3-fbf02d262285'    
     });
 
+
+  <% if @draft_over %>
+    setTimeout("location.reload(true);", 30000);
+  <% end %>
+
   function getCookieValue(a, b) {
     b = document.cookie.match('(^|;)\\s*' + a + '\\s*=\\s*([^;]+)');
     return b ? b.pop() : '';
@@ -59,6 +64,13 @@
     {
       $("#" + nextPlayer).css("color", "red");  
     }
+
+    if (pickCount > (draftOrder.length * 4))
+    {
+      $("#navbar").remove();
+      setTimeout("location.reload(true);", 30000);
+    }
+
   }
 
   function generateDraft(draftOrder, pickOrder) 

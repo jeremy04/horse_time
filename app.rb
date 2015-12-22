@@ -8,7 +8,9 @@ require 'sinatra/contrib/all'
 require 'active_support/all'
 require 'pp'
 require './cat_facts'
+require 'logger'
 
+enable :logging
 set :bind, '0.0.0.0'
 
 configure do

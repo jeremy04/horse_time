@@ -145,7 +145,7 @@ get %r{/room/([A-Z0-9]{4})} do
         @other_team = team_playing[1]
       else
         @horse_team = "Pittsburgh Penguins"
-        @other_team = "Other team"
+        @other_team = "Heroku sucks at time"
       end
       erb :room
     end

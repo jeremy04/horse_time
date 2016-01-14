@@ -190,7 +190,7 @@ get '/scores.json' do
   content_type :json
   horse_team = params[:horse_team] || "Pittsburgh Penguins"
   room_code = params[:room_code]
-  if REDIS.hexists("scores_" + horse_team.gsub(/\s/,"") + "_" + room_code, "scores")
+  if room_code && REDIS.hexists("scores_" + horse_team.gsub(/\s/,"") + "_" + room_code, "scores")
     pp "Scores cached #{room_code}"
     return REDIS.hget("scores_" + horse_team.gsub(/\s/,"") + "_" + room_code, "scores")
   else
@@ -206,7 +206,7 @@ get '/players.json' do
   horse_team = params[:horse_team] || "Pittsburgh Penguins"
   room_code = params[:room_code]
   
-  if REDIS.hexists(horse_team.gsub(/\s/,"")  + "_" + room_code, "active_roster")
+  if room_code && REDIS.hexists(horse_team.gsub(/\s/,"")  + "_" + room_code, "active_roster")
     pp "Roster cached: #{horse_team} #{room_code}"
     return REDIS.hget(horse_team.gsub(/\s/,"")  + "_" + room_code, "active_roster")
   else
@@ -227,4 +227,8 @@ end
 
 get '/cat_fact' do
   "#{CatFacts.new.random_fact}"
+end
+
+get '/flux' do
+  send_file 'flux.html'
 end

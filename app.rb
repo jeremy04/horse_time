@@ -195,8 +195,10 @@ get '/scores.json' do
     return REDIS.hget("scores_" + horse_team.gsub(/\s/,"") + "_" + room_code, "scores")
   else
     scores = Scores.new(horse_team).goals
-    REDIS.hset("scores_" + horse_team.gsub(/\s/,"") + "_" + room_code, "scores", JSON.dump(scores))
-    REDIS.expire("scores_" + horse_team .gsub(/\s/,"")+ "_" + room_code, 8)
+    if room_code
+      REDIS.hset("scores_" + horse_team.gsub(/\s/,"") + "_" + room_code, "scores", JSON.dump(scores))
+      REDIS.expire("scores_" + horse_team .gsub(/\s/,"")+ "_" + room_code, 8)
+    end
     return scores.to_json
   end
 end
@@ -211,8 +213,10 @@ get '/players.json' do
     return REDIS.hget(horse_team.gsub(/\s/,"")  + "_" + room_code, "active_roster")
   else
     roster = ActiveRoster.new(horse_team).scrape
-    REDIS.hset(horse_team.gsub(/\s/,"") + "_" + room_code, "active_roster", JSON.dump(roster))
-    REDIS.expire(horse_team.gsub(/\s/,"") + "_" + room_code, 5 * 60 * 60)
+    if room_code
+      REDIS.hset(horse_team.gsub(/\s/,"") + "_" + room_code, "active_roster", JSON.dump(roster))
+      REDIS.expire(horse_team.gsub(/\s/,"") + "_" + room_code, 5 * 60 * 60)
+    end
     return roster.to_json
   end
 end

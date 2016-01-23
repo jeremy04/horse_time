@@ -2,7 +2,6 @@
   var eligibleHorses;
   var draftOrder;
   var pickCount = <%= @pick_count %>;
-  var subscribed = true;
   var spareHorses = [];
   var pubnub = PUBNUB({
       subscribe_key: 'sub-c-ce8ecf20-6eb2-11e5-ba34-02ee2ddab7fe', 
@@ -26,6 +25,78 @@
     }));
 
     return _.difference(eligibleHorses.horse_team.concat(eligibleHorses.other), used);
+  }
+
+  function top_points(players, goals)
+  {
+    players =  _.map(players, function(player) {
+      hash = {};
+
+      lookup_player = _.findWhere(goals, {"name": player });
+      if (lookup_player === undefined || lookup_player === null)
+      {
+        console.log("Problem with: " + player);
+        hash[player] = 0;
+      }
+      else {
+        hash[player] = lookup_player.points;
+      }
+      return hash;
+    });
+    
+    players = _.sortBy(players, function(player) {
+      return -_.values(player)[0];
+    });
+    return players.slice(0, 5);
+  }
+
+  function displayStats(eligibleHorses)
+  {
+    $.get("/scores.json", { horse_team: "<%= @horse_team %>", room_code: "<%= @room_code %>" },function(data) 
+      {
+        _.each(data.goals, function(points, player){
+          $('p[data-horse="' + player + '"]').append(" G: " + points);
+        });
+
+        _.each(data.assists, function(points, player){
+          $('p[data-horse="' + player + '"]').append(" A: " + points);
+        });
+
+        var goals = data.goals;
+        var assists = data.assists;
+      
+        goals = _.map(goals, function(value, key) { 
+          var hsh = {};
+          hsh["name"] = key;
+          hsh["points"] = value;
+          return hsh;
+        });
+
+        assists = _.map(assists, function(value, key) { 
+          var hsh = {};
+
+          hsh["name"] = key;
+          hsh["points"] = value;
+          return hsh;
+        });
+
+        var points = goals.concat(assists);
+        points = _(points).groupBy("name");
+        
+        points = _(points).map(function(g, key) {
+          return { name: key, 
+                   points: _(g).reduce(function(m,x) { return m + x.points; }, 0) };
+        });
+
+        _.each(top_points(eligibleHorses.horse_team, points), function(player) {
+          $("#horse_team_scorers").append("<p class='indent'>" + _.keys(player)[0] + " : " +  _.values(player)[0] + "</p>");
+        });
+
+        _.each(top_points(eligibleHorses.other, points), function(player) {
+          $("#other_team_scorers").append("<p class='indent'>" + _.keys(player)[0] + " : " +  _.values(player)[0] + "</p>");
+        });
+  
+      });
   }
 
   function updateRound(message)
@@ -77,6 +148,12 @@
   {
     $("#" + pickOrder[pickCount]).css("color","red");
     
+    pubnub.subscribe({
+      channel: 'horse_selected',
+      message: updateRound,
+      error: function (error) { console.log(JSON.stringify(error));}
+    });
+
     _.each(draftOrder, function(player) {
       
       var fullRoster = roster[player]["horse_team"].concat(roster[player]["other_team"]);
@@ -90,18 +167,6 @@
            $("#draft" + player).click();
         }
       });
-
-      if(subscribed) {
-
-        pubnub.subscribe({
-          channel: 'horse_selected',
-          message: updateRound,
-          error: function (error) { console.log(JSON.stringify(error));}
-        });
-
-      }
-      
-      subscribed = false;
 
       $("#draft" + player).on("click", function(){
         
@@ -201,36 +266,15 @@
 
     }
 
-    function top_points(players, goals)
-    {
-      players =  _.map(players, function(player) {
-        hash = {};
-  
-        lookup_player = _.findWhere(goals, {"name": player });
-        if (lookup_player === undefined || lookup_player === null)
-        {
-          console.log("Problem with: " + player);
-          hash[player] = 0;
-        }
-        else {
-
-          hash[player] = lookup_player.points;
-
-        }
-        return hash;
-      });
-      
-      players = _.sortBy(players, function(player) {
-        return -_.values(player)[0];
-      });
-      return players.slice(0, 5);
-    }
 
     $.get("/players.json", { horse_team: "<%= @horse_team %>", room_code: "<%= @room_code %>" }, function( data ) {
         draftOrder = <%= @players.to_json %>;
         roster = <%= @roster.to_json %>;
 
         eligibleHorses = data;
+        
+        console.log("Eligible Horses" + JSON.stringify(eligibleHorses));
+
         spareHorses = horsesLeft(roster, eligibleHorses);
 
         pickOrder = <%= @pick_order.to_json %>;
@@ -238,65 +282,7 @@
         show_draft(pickOrder);
         generateDraft(draftOrder, pickOrder);
 
-        $.get("/scores.json", { horse_team: "<%= @horse_team %>", room_code: "<%= @room_code %>" }, function(data) {
-
-          _.each(data.goals, function(points, player){
-            $('p[data-horse="' + player + '"]').append(" G: " + points);
-          });
-
-          _.each(data.assists, function(points, player){
-            $('p[data-horse="' + player + '"]').append(" A: " + points);
-          });
-
-
-        });
-
-
-        $.get("/scores.json", { horse_team: "<%= @horse_team %>", room_code: "<%= @room_code %>" }, function(data) {
-          var goals = data.goals;
-          var assists = data.assists;
-          
-          goals = _.map(goals, function(value, key) { 
-            var hsh = {};
-            hsh["name"] = key;
-            hsh["points"] = value;
-            return hsh;
-          });
-
-          assists = _.map(assists, function(value, key) { 
-            var hsh = {};
-      
-            hsh["name"] = key;
-            hsh["points"] = value;
-            return hsh;
-          });
-
-
-          var points = goals.concat(assists);
-          points = _(points).groupBy("name");
-          
-          points = _(points).map(function(g, key) {
-            return { name: key, 
-                     points: _(g).reduce(function(m,x) { return m + x.points; }, 0) };
-          });
-
-
-          $.get("/players.json", { horse_team: "<%= @horse_team %>", room_code: "<%= @room_code %>" }, function(data) {
-
-            _.each(top_points(data.horse_team, points), function(player) {
-              $("#horse_team_scorers").append("<p class='indent'>" + _.keys(player)[0] + " : " +  _.values(player)[0] + "</p>");
-            });
-
-            _.each(top_points(data.other, points), function(player) {
-              $("#other_team_scorers").append("<p class='indent'>" + _.keys(player)[0] + " : " +  _.values(player)[0] + "</p>");
-            });
-
-           
-            
-          });
-
-        
-        });
+        displayStats(eligibleHorses);
 
     });
 

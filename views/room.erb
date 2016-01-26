@@ -238,14 +238,16 @@
           }, 
             function(returnedData){
               console.log(returnedData);
-        });
 
-        pubnub.publish({
-           channel: 'horse_selected',        
-           message:  {
+              pubnub.publish({
+                channel: 'horse_selected',        
+                message:  {
                       player: currentPlayer,
                       horse: selection
-                     }
+                }
+              });
+
+
         });
 
 

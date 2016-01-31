@@ -106,6 +106,7 @@ $(document).ready(function() {
 <div class="row">
   <div class="col-md-4">
     <p>
+      <% if @teams.present? %>
       <form role="form">
         <div class="form-group">
           <label for="sel1">Select team (select one):</label>
@@ -128,6 +129,10 @@ $(document).ready(function() {
     </p>
 
     <p><a class="btn btn-default" id="start_game" role="button">EVERYONES IN GUYS</a></p>
+    <% else %>
+       <BR /> <BR />
+      Sorry, there are no NHL games currently playing today.
+    <% end %>
   </div>
 </div>
 <% end %>

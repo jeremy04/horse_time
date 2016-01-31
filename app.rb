@@ -1,6 +1,8 @@
 require 'rubygems'
 require 'sinatra'
-require './lib/team_scrapper'
+require './lib/scores'
+require './lib/active_roster'
+require './lib/available_games'
 require './lib/pick_order'
 require "./lib/rng.rb"
 require 'json'

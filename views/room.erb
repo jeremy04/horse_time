@@ -131,38 +131,46 @@
     $("input[name=\"" + message.player + "\"]").css("display", "none");
     $("input[name=\"" + message.player + "\"]").val('');
     $("#" + message.player).css("color", "black");
-    pickCount += 1;
-    nextPlayer = pickOrder[pickCount];
-    jQuery.noConflict();
-    $("input[name=\"" + nextPlayer + "\"]").autocomplete({
-      orientation: "auto",
-      minChars: '2',
-      lookup: spareHorses,
-      onSelect: function() { return; }
-    });
     
-    var ht_cookie = JSON.parse(unescape(getCookieValue("horsetime")));
 
-    if (ht_cookie.name == nextPlayer) {
-      $("#draft" + nextPlayer).css("display", "inline");
-      $("#draft" + nextPlayer).prop("disabled",false);
-      $("input[name=\"" + nextPlayer + "\"]").css("display", "inline");                
-    }
+    $.get("/get_players.json", { room_code: "<%= @room_code %>" },
+      function(data)
+      {
+        pickCount = data.pickCount;
+        nextPlayer = pickOrder[pickCount];
+        jQuery.noConflict();
+        $("input[name=\"" + nextPlayer + "\"]").autocomplete({
+          orientation: "auto",
+          minChars: '2',
+          lookup: spareHorses,
+          onSelect: function() { return; }
+        });
+        
+        var ht_cookie = JSON.parse(unescape(getCookieValue("horsetime")));
 
-    if (message.player == nextPlayer)
-    {
-      $("#" + nextPlayer).css("color", "green");
-    }
-    else
-    {
-      $("#" + nextPlayer).css("color", "red");  
-    }
+        if (ht_cookie.name == nextPlayer) {
+          $("#draft" + nextPlayer).css("display", "inline");
+          $("#draft" + nextPlayer).prop("disabled",false);
+          $("input[name=\"" + nextPlayer + "\"]").css("display", "inline");                
+        }
 
-    if (pickCount > (draftOrder.length * 4))
-    {
-      $("#navbar").remove();
-      setTimeout("location.reload(true);", 30000);
-    }
+        if (message.player == nextPlayer)
+        {
+          $("#" + nextPlayer).css("color", "green");
+        }
+        else
+        {
+          $("#" + nextPlayer).css("color", "red");  
+        }
+
+        if (pickCount > (draftOrder.length * 4))
+        {
+          $("#navbar").remove();
+          setTimeout("location.reload(true);", 30000);
+        }
+
+
+      });
 
   }
 

@@ -5,6 +5,7 @@ require './lib/active_roster'
 require './lib/available_games'
 require './lib/pick_order'
 require "./lib/rng.rb"
+require './lib/players_validator'
 require 'json'
 require 'sinatra/contrib/all'
 require 'active_support/all'
@@ -66,12 +67,17 @@ post '/update_pick.json' do
      player["horses"] = horses 
    end
   end
-  REDIS.hset(params[:room_code], "players", JSON.dump(players))
-  pickCount = REDIS.hget(params[:room_code], "pickCount").to_i
-  pickCount+=1
-  REDIS.hset(params[:room_code], "pickCount", pickCount)
-  REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * 4) 
-  ["Updated"].to_json
+
+  if PlayersValidator.new(players).valid?
+    REDIS.hset(params[:room_code], "players", JSON.dump(players))
+    pickCount = REDIS.hget(params[:room_code], "pickCount").to_i
+    pickCount+=1
+    REDIS.hset(params[:room_code], "pickCount", pickCount)
+    REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * 4) 
+    { message: "Updated sucessfully" , errors: []}.to_json
+  else
+    { message: "There was an error", errors: ["Invalid Horses"]}.to_json
+  end
 end
 
 get '/get_players.json' do

@@ -18,15 +18,27 @@ class Scores
     
     begin
       agent = Mechanize.new
-      page = agent.get("http://www.nhl.com/gamecenter/en/icetracker?id=#{latest_game["gameID"]}")
-    rescue Mechanize::ResponseCodeError
+      page = agent.get("https://statsapi.web.nhl.com/api/v1/game/#{latest_game["gameID"]}/feed/live?site=en_nhl")
+    rescue Mechanize::ResponseCodeError => e
       return {:goals => [], :assists => [] }
     end
-    doc = Nokogiri::HTML(page.body)  
-    skaters = doc.css(".skaters tbody tr").children.map { |x| x.text }.each_slice(9).to_a
-    goals = skaters.map { |x| [x[1],x[3].to_i] }
-    assists =  skaters.map { |x| [x[1],x[4].to_i] }
-    foo = {:goals => goals.to_h, :assists => assists.to_h }
+
+    jsonData =  JSON.parse(page.body)
+    home_skaters = jsonData["liveData"]["boxscore"]["teams"]["home"]["players"].map { |p| p[1] }
+    away_skaters = jsonData["liveData"]["boxscore"]["teams"]["away"]["players"].map { |p| p[1] }
+    
+    home_skaters = home_skaters.select { |s|    s["stats"].present? && s["stats"]["skaterStats"].present? }
+    home_goals   = home_skaters.map    { |s| [s["person"]["fullName"], s["stats"]["skaterStats"]["goals"]]}
+    home_assists = home_skaters.map    { |s| [s["person"]["fullName"], s["stats"]["skaterStats"]["assists"]]}
+
+    away_skaters = away_skaters.select { |s|    s["stats"].present? && s["stats"]["skaterStats"].present? }
+    away_goals   = away_skaters.map    { |s| [s["person"]["fullName"], s["stats"]["skaterStats"]["goals"]]}
+    away_assists = away_skaters.map    { |s| [s["person"]["fullName"], s["stats"]["skaterStats"]["assists"]]}  
+    
+    goals   = home_goals.to_h.merge(away_goals.to_h)
+    assists = home_goals.to_h.merge(away_assists.to_h)
+  
+    foo = {:goals => goals, :assists => assists }
     foo
   end
   

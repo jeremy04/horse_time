@@ -6,7 +6,7 @@ class ActiveRoster
   def initialize(horse_team)
     @horse_team = horse_team
   end
-  
+
   def scrape
     agent = Mechanize.new
     page = agent.get("http://www.nicetimeonice.com/api/seasons/20152016/games/")
@@ -16,14 +16,15 @@ class ActiveRoster
     
     begin
       agent = Mechanize.new
-      page = agent.get("http://www.nhl.com/gamecenter/en/icetracker?id=#{latest_game["gameID"]}")
-    rescue Mechanize::ResponseCodeError
+      page = agent.get("https://statsapi.web.nhl.com/api/v1/game/#{latest_game["gameID"]}/feed/live?site=en_nhl")
+    rescue Mechanize::ResponseCodeError => e
       return {:horse_team => [], :other => [] }
     end
 
-    doc = Nokogiri::HTML(page.body)  
-    home_skaters = doc.css("#homeTeamScroll .skaters tbody tr").children.map { |x| x.text }.each_slice(9).to_a.map { |x| x[1] }
-    away_skaters = doc.css("#awayTeamScroll .skaters tbody tr").children.map { |x| x.text }.each_slice(9).to_a.map { |x| x[1] }
+    jsonData = JSON.parse(page.body)
+    jsonData = jsonData["gameData"]["players"].map { |p| p[1] }
+    home_skaters = jsonData.select { |p| p["currentTeam"]["name"] == latest_game["homeTeam"] }.map { |p| p["fullName"] }
+    away_skaters = jsonData.select { |p| p["currentTeam"]["name"] == latest_game["awayTeam"] }.map { |p| p["fullName"] }
 
     if latest_game["homeTeam"] == @horse_team
       return { :horse_team => home_skaters, :other => away_skaters }

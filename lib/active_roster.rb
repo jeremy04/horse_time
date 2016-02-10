@@ -23,8 +23,25 @@ class ActiveRoster
 
     jsonData = JSON.parse(page.body)
     jsonData = jsonData["gameData"]["players"].map { |p| p[1] }
-    home_skaters = jsonData.select { |p| p["currentTeam"]["name"] == latest_game["homeTeam"] }.map { |p| p["fullName"] }
-    away_skaters = jsonData.select { |p| p["currentTeam"]["name"] == latest_game["awayTeam"] }.map { |p| p["fullName"] }
+    if jsonData.size > 0
+
+      home_skaters = jsonData.select { |p| p["currentTeam"]["name"] == latest_game["homeTeam"] }.map { |p| p["fullName"] }
+      away_skaters = jsonData.select { |p| p["currentTeam"]["name"] == latest_game["awayTeam"] }.map { |p| p["fullName"] }
+
+    else
+      home_team_id = jsonData["gameData"]["teams"]["home"]["id"]
+      away_team_id = jsonData["gameData"]["teams"]["away"]["id"]
+      begin
+        agent = Mechanize.new
+        page = agent.get("https://statsapi.web.nhl.com/api/v1/teams?site=en_nhl&teamId=#{home_team_id},#{away_team_id}&expand=team.roster,roster.person,person.stats&stats=statsSingleSeason")
+      rescue Mechanize::ResponseCodeError => e
+        return {:horse_team => [], :other => [] }
+      end
+
+      jsonData = JSON.parse(page.body)
+      home_skaters = jsonData["teams"][0]["roster"]["roster"].map { |p| p["fullName"] }
+      away_skaters = jsonData["teams"][1]["roster"]["roster"].map { |p| p["fullName"] }
+    end
 
     if latest_game["homeTeam"] == @horse_team
       return { :horse_team => home_skaters, :other => away_skaters }

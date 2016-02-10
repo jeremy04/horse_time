@@ -22,11 +22,10 @@ class ActiveRoster
     end
 
     jsonData = JSON.parse(page.body)
-    jsonData = jsonData["gameData"]["players"].map { |p| p[1] }
-    if jsonData.size > 0
-
-      home_skaters = jsonData.select { |p| p["currentTeam"]["name"] == latest_game["homeTeam"] }.map { |p| p["fullName"] }
-      away_skaters = jsonData.select { |p| p["currentTeam"]["name"] == latest_game["awayTeam"] }.map { |p| p["fullName"] }
+    players = jsonData["gameData"]["players"].map { |p| p[1] }
+    if players.size > 0
+      home_skaters = players.select { |p| p["currentTeam"]["name"] == latest_game["homeTeam"] }.map { |p| p["fullName"] }
+      away_skaters = players.select { |p| p["currentTeam"]["name"] == latest_game["awayTeam"] }.map { |p| p["fullName"] }
 
     else
       home_team_id = jsonData["gameData"]["teams"]["home"]["id"]
@@ -39,8 +38,8 @@ class ActiveRoster
       end
 
       jsonData = JSON.parse(page.body)
-      home_skaters = jsonData["teams"][0]["roster"]["roster"].map { |p| p["fullName"] }
-      away_skaters = jsonData["teams"][1]["roster"]["roster"].map { |p| p["fullName"] }
+      home_skaters = jsonData["teams"][0]["roster"]["roster"].map { |p| p["person"]["fullName"] }
+      away_skaters = jsonData["teams"][1]["roster"]["roster"].map { |p| p["person"]["fullName"] }
     end
 
     if latest_game["homeTeam"] == @horse_team

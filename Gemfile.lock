@@ -8,6 +8,7 @@ GEM
       thread_safe (~> 0.3, >= 0.3.4)
       tzinfo (~> 1.1)
     backports (3.6.7)
+    byebug (8.2.2)
     daemons (1.2.3)
     domain_name (0.5.25)
       unf (>= 0.0.5, < 1.0.0)
@@ -70,6 +71,7 @@ PLATFORMS
 
 DEPENDENCIES
   activesupport
+  byebug
   erubis
   json
   mechanize

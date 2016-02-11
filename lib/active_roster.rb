@@ -41,8 +41,8 @@ class ActiveRoster
 
       jsonData = JSON.parse(page.body)
 
-      home_skaters = jsonData["teams"].select { |team| team["id"] == home_team_id }.first["roster"]["roster"].map { |p| p["person"]["fullName"] }
-      away_skaters = jsonData["teams"].select { |team| team["id"] == away_team_id }.first["roster"]["roster"].map { |p| p["person"]["fullName"] }
+      home_skaters = jsonData["teams"].select { |team| team["id"] == home_team_id }.first["roster"]["roster"].select { |p| p["person"]["primaryPosition"]["code"] != "G" && p["person"]["rosterStatus"] != "I" }.map { |p| p["person"]["fullName"] }
+      away_skaters = jsonData["teams"].select { |team| team["id"] == away_team_id }.first["roster"]["roster"].select { |p| p["person"]["primaryPosition"]["code"] != "G" && p["person"]["rosterStatus"] != "I" }.map { |p| p["person"]["fullName"] }
     end
 
     if latest_game["homeTeam"] == @horse_team

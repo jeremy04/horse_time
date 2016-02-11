@@ -8,3 +8,7 @@ gem 'activesupport'
 gem 'redis'
 gem 'erubis'
 gem 'thin'
+
+group :development do
+  gem 'byebug'
+end

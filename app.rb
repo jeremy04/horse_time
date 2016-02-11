@@ -187,6 +187,23 @@ post '/generate_room_code.json' do
   {:room_code => activation_code}.to_json
 end
 
+get '/season_stats.json' do
+  content_type :json
+  horse_team = params[:horse_team] || "Pittsburgh Penguins"
+  room_code = params[:room_code]
+  
+  if room_code && REDIS.hexists(horse_team.gsub(/\s/,"")  + "_" + room_code, "season_total")
+    pp "Roster cached: #{horse_team} #{room_code}"
+    return REDIS.hget(horse_team.gsub(/\s/,"")  + "_" + room_code, "season_total")
+  else
+    roster = Scores.new(horse_team).season_goals
+    if room_code
+      REDIS.hset(horse_team.gsub(/\s/,"") + "_" + room_code, "season_total", JSON.dump(roster))
+      REDIS.expire(horse_team.gsub(/\s/,"") + "_" + room_code, 5 * 60 * 60)
+    end
+    return roster.to_json
+  end
+end
 
 get '/scores.json' do
   content_type :json

@@ -9,13 +9,58 @@ class Scores
     @horse_team = horse_team
   end
 
+  def season_goals
+    agent = Mechanize.new
+    page = agent.get("http://www.nicetimeonice.com/api/seasons/20152016/games/")
+    json = JSON.parse(page.content)
+    json = json.select { |x| x["awayTeam"] == @horse_team || x["homeTeam"] == @horse_team }
+    latest_game = horse_games(json).sort_by { |h| Date.parse(h["date"]) }.last
+
+    begin
+      agent = Mechanize.new
+      page = agent.get("https://statsapi.web.nhl.com/api/v1/game/#{latest_game["gameID"]}/feed/live?site=en_nhl")
+    rescue Mechanize::ResponseCodeError => e
+      return {:horse_team => [], :other => [] }
+    end
+
+    jsonData = JSON.parse(page.body)
+    home_team_id = jsonData["gameData"]["teams"]["home"]["id"]
+    away_team_id = jsonData["gameData"]["teams"]["away"]["id"]
+    begin
+      agent = Mechanize.new
+      page = agent.get("https://statsapi.web.nhl.com/api/v1/teams?site=en_nhl&teamId=#{home_team_id},#{away_team_id}&expand=team.roster,roster.person,person.stats&stats=statsSingleSeason")
+    rescue Mechanize::ResponseCodeError => e
+      return {:horse_team => [], :other => [] }
+    end
+
+    jsonData = JSON.parse(page.body)
+
+    home_skaters = jsonData["teams"].select { |team| team["id"] == home_team_id }.first["roster"]["roster"].map { |p| p["person"] }.select { |p| p["primaryPosition"]["code"] != "G" }
+    away_skaters = jsonData["teams"].select { |team| team["id"] == away_team_id }.first["roster"]["roster"].map { |p| p["person"] }.select { |p| p["primaryPosition"]["code"] != "G" }
+
+    home_skaters = home_skaters.select { |s|    s["stats"].present? && s["stats"].first["splits"].first["stat"].present? }
+    home_goals   = home_skaters.map    { |s| [s["fullName"], s["stats"].first["splits"].first["stat"]["goals"]]}
+    home_assists = home_skaters.map    { |s| [s["fullName"], s["stats"].first["splits"].first["stat"]["assists"]]}
+
+    away_skaters = away_skaters.select { |s|    s["stats"].present? && s["stats"].first["splits"].first["stat"].present? }
+    away_goals   = away_skaters.map    { |s| [s["fullName"], s["stats"].first["splits"].first["stat"]["goals"]]}
+    away_assists = away_skaters.map    { |s| [s["fullName"], s["stats"].first["splits"].first["stat"]["assists"]]}  
+    
+    goals   = home_goals.to_h.merge(away_goals.to_h)
+    assists = home_goals.to_h.merge(away_assists.to_h)
+  
+    foo = {:goals => goals, :assists => assists }
+    foo
+  end
+
   def goals
     agent = Mechanize.new
     page = agent.get("http://www.nicetimeonice.com/api/seasons/20152016/games/")
     json = JSON.parse(page.content)
     json = json.select { |x| x["awayTeam"] == @horse_team || x["homeTeam"] == @horse_team }
     latest_game = horse_games(json).sort_by { |h| Date.parse(h["date"]) }.last
-    
+
+
     begin
       agent = Mechanize.new
       page = agent.get("https://statsapi.web.nhl.com/api/v1/game/#{latest_game["gameID"]}/feed/live?site=en_nhl")

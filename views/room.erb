@@ -53,36 +53,10 @@
 
   function displayStats(eligibleHorses)
   {
-    $.get("/scores.json", { horse_team: "<%= @horse_team %>", room_code: "<%= @room_code %>" },function(data) 
+    $.get("/season_stats.json", { horse_team: "<%= @horse_team %>", room_code: "<%= @room_code %>"},
+      function(data)
       {
-       
-        roster = <%= @roster.to_json %>;
-
-        _.each(data.goals, function(points, player){
-          _.each(_.keys(roster), function(value) {
-            var fullRoster = roster[value]["horse_team"].concat(roster[value]["other_team"]); 
-            if(_.contains(fullRoster, player)) {
-              shotTotals[value] += (points);
-            }
-          });
-
-          $('p[data-horse="' + player + '"]').append(" G: " + points);
-        });
-
-        _.each(data.assists, function(points, player) {
-          _.each(_.keys(roster), function(value) {
-            var fullRoster = roster[value]["horse_team"].concat(roster[value]["other_team"]);    
-            if(_.contains(fullRoster, player)) {
-              shotTotals[value] += (points / 2);
-            }
-          });
-
-          $('p[data-horse="' + player + '"]').append(" A: " + points);
-        });
-
-        _.each(_.keys(roster), function(value) {
-         $("#" + value + "_horses h4").append(" - " + shotTotals[value])
-        });
+        // Lead scorers
         
         var goals = data.goals;
         var assists = data.assists;
@@ -116,6 +90,39 @@
 
         _.each(top_points(eligibleHorses.other, points), function(player) {
           $("#other_team_scorers").append("<p class='indent'>" + _.keys(player)[0] + " : " +  _.values(player)[0] + "</p>");
+        });
+
+      });
+
+    $.get("/scores.json", { horse_team: "<%= @horse_team %>", room_code: "<%= @room_code %>" },function(data) 
+      {
+       
+        roster = <%= @roster.to_json %>;
+
+        _.each(data.goals, function(points, player){
+          _.each(_.keys(roster), function(value) {
+            var fullRoster = roster[value]["horse_team"].concat(roster[value]["other_team"]); 
+            if(_.contains(fullRoster, player)) {
+              shotTotals[value] += (points);
+            }
+          });
+
+          $('p[data-horse="' + player + '"]').append(" G: " + points);
+        });
+
+        _.each(data.assists, function(points, player) {
+          _.each(_.keys(roster), function(value) {
+            var fullRoster = roster[value]["horse_team"].concat(roster[value]["other_team"]);    
+            if(_.contains(fullRoster, player)) {
+              shotTotals[value] += (points / 2);
+            }
+          });
+
+          $('p[data-horse="' + player + '"]').append(" A: " + points);
+        });
+
+        _.each(_.keys(roster), function(value) {
+         $("#" + value + "_horses h4").append(" - " + shotTotals[value])
         });
   
       });

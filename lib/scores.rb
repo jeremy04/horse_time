@@ -3,6 +3,8 @@ require 'active_support/all'
 require 'sinatra/contrib/all'
 require 'nokogiri'
 require 'json'
+require 'net/https'
+require 'uri'
 
 class Scores
   def initialize(horse_team)
@@ -62,8 +64,12 @@ class Scores
 
 
     begin
-      agent = Mechanize.new {|a| a.ssl_version, a.verify_mode = :TLSv1_2, OpenSSL::SSL::VERIFY_NONE}
-      page = agent.get("https://statsapi.web.nhl.com/api/v1/game/#{latest_game["gameID"]}/feed/live?site=en_nhl")
+      uri = URI("https://statsapi.web.nhl.com/api/v1/game/#{latest_game["gameID"]}/feed/live?site=en_nhl")
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+      http.ssl_version = :TLSv1_2
+      http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      page = http.get(uri.path)
     rescue Mechanize::ResponseCodeError => e
       return {:goals => [], :assists => [] }
     end

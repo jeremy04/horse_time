@@ -37,8 +37,8 @@ class Scores
 
     jsonData = JSON.parse(page.body)
 
-    home_skaters = jsonData["teams"].select { |team| team["id"] == home_team_id }.first["roster"]["roster"].map { |p| p["person"] }.select { |p| p["primaryPosition"]["code"] != "G" }
-    away_skaters = jsonData["teams"].select { |team| team["id"] == away_team_id }.first["roster"]["roster"].map { |p| p["person"] }.select { |p| p["primaryPosition"]["code"] != "G" }
+    home_skaters = jsonData["teams"].select { |team| team["id"] == home_team_id }.first["roster"]["roster"].map { |p| p["person"] }.select { |p| p["primaryPosition"]["code"] != "G" && p["rosterStatus"] != "I" }
+    away_skaters = jsonData["teams"].select { |team| team["id"] == away_team_id }.first["roster"]["roster"].map { |p| p["person"] }.select { |p| p["primaryPosition"]["code"] != "G" && p["rosterStatus"] != "I" }
 
     home_skaters = home_skaters.select { |s|    s["stats"].present? && s["stats"].first["splits"].first["stat"].present? }
     home_goals   = home_skaters.map    { |s| [s["fullName"], s["stats"].first["splits"].first["stat"]["goals"]]}
@@ -49,7 +49,7 @@ class Scores
     away_assists = away_skaters.map    { |s| [s["fullName"], s["stats"].first["splits"].first["stat"]["assists"]]}  
     
     goals   = home_goals.to_h.merge(away_goals.to_h)
-    assists = home_goals.to_h.merge(away_assists.to_h)
+    assists = home_assists.to_h.merge(away_assists.to_h)
   
     foo = {:goals => goals, :assists => assists }
     foo
@@ -85,7 +85,7 @@ class Scores
     away_skaters = away_skaters.select { |s|    s["stats"].present? && s["stats"]["skaterStats"].present? }
     away_goals   = away_skaters.map    { |s| [s["person"]["fullName"], s["stats"]["skaterStats"]["goals"]]}
     away_assists = away_skaters.map    { |s| [s["person"]["fullName"], s["stats"]["skaterStats"]["assists"]]}  
-    
+
     goals   = home_goals.to_h.merge(away_goals.to_h)
     assists = home_goals.to_h.merge(away_assists.to_h)
   

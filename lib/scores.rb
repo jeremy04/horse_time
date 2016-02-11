@@ -87,7 +87,7 @@ class Scores
     away_assists = away_skaters.map    { |s| [s["person"]["fullName"], s["stats"]["skaterStats"]["assists"]]}  
 
     goals   = home_goals.to_h.merge(away_goals.to_h)
-    assists = home_goals.to_h.merge(away_assists.to_h)
+    assists = home_assists.to_h.merge(away_assists.to_h)
   
     foo = {:goals => goals, :assists => assists }
     foo

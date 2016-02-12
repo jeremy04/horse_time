@@ -100,6 +100,7 @@
         roster = <%= @roster.to_json %>;
 
         _.each(data.goals, function(points, player){
+          player = player.replace(/'/g, '');
           _.each(_.keys(roster), function(value) {
             var fullRoster = roster[value]["horse_team"].concat(roster[value]["other_team"]); 
             if(_.contains(fullRoster, player)) {
@@ -111,6 +112,7 @@
         });
 
         _.each(data.assists, function(points, player) {
+          player = player.replace(/'/g, '');
           _.each(_.keys(roster), function(value) {
             var fullRoster = roster[value]["horse_team"].concat(roster[value]["other_team"]);    
             if(_.contains(fullRoster, player)) {
@@ -196,6 +198,8 @@
       var fullRoster = roster[player]["horse_team"].concat(roster[player]["other_team"]);
      
       _.each(fullRoster, function(horse) {
+        horse = horse.replace(/'/g, '');
+
         $("#horses_selected #" + player + "_horses").append("<p data-horse='" + horse + "' class='indent'>" + horse + "</p>");
       });
       

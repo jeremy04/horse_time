@@ -76,7 +76,7 @@ post '/update_pick.json' do
     REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * 4) 
     { message: "Updated sucessfully" , errors: []}.to_json
   else
-    { message: "There was an error", errors: ["Invalid Horses"]}.to_json
+    { message: "There was an error", errors: ["Cant pick the same guy twice bro"]}.to_json
   end
 end
 

@@ -247,7 +247,12 @@
         }
 
         // UPDATE REDIS
+        
+        currentPicks.horse_team = _.uniq(currentPicks.horse_team);
+        currentPicks.other_team = _.uniq(currentPicks.other_team);
+        
         roster[currentPlayer] = currentPicks;
+
         
         $.post('/update_pick.json', 
           { room_code: "<%= @room_code %>",
@@ -256,8 +261,10 @@
             name: currentPlayer
           }, 
             function(returnedData){
-              console.log(returnedData);
-
+              if(returnedData.errors.length > 0) {
+                alert(returnedData.errors[0]);
+                return;
+              }
               pubnub.publish({
                 channel: 'horse_selected',        
                 message:  {

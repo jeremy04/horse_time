@@ -175,6 +175,10 @@ get "/login" do
   end
 end
 
+get '/exception' do
+  raise Exception, "Hi Rollbar"
+end
+
 get '/' do
   if cookies[:horsetime]
     room_code = JSON.parse(cookies[:horsetime])["room_code"]

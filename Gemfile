@@ -8,6 +8,8 @@ gem 'activesupport'
 gem 'redis'
 gem 'erubis'
 gem 'thin'
+gem 'rollbar', '~> 2.7.1'
+gem 'rake'
 
 group :development do
   gem 'byebug'

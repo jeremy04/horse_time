@@ -41,7 +41,10 @@ GEM
       rack
     rack-test (0.6.3)
       rack (>= 1.0)
+    rake (0.9.6)
     redis (3.2.2)
+    rollbar (2.7.1)
+      multi_json
     sinatra (1.4.6)
       rack (~> 1.4)
       rack-protection (~> 1.4)
@@ -75,7 +78,9 @@ DEPENDENCIES
   erubis
   json
   mechanize
+  rake
   redis
+  rollbar (~> 2.7.1)
   sinatra
   sinatra-contrib
   thin

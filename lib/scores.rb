@@ -5,6 +5,7 @@ require 'nokogiri'
 require 'json'
 require 'net/https'
 require 'uri'
+require './lib/player_stats'
 
 class Scores
   def initialize(horse_team)
@@ -40,19 +41,11 @@ class Scores
     home_skaters = jsonData["teams"].select { |team| team["id"] == home_team_id }.first["roster"]["roster"].map { |p| p["person"] }.select { |p| p["primaryPosition"]["code"] != "G" && p["rosterStatus"] != "I" }
     away_skaters = jsonData["teams"].select { |team| team["id"] == away_team_id }.first["roster"]["roster"].map { |p| p["person"] }.select { |p| p["primaryPosition"]["code"] != "G" && p["rosterStatus"] != "I" }
 
-    home_skaters = home_skaters.select { |s|    s["stats"].present? && s["stats"].first["splits"].first["stat"].present? }
-    home_goals   = home_skaters.map    { |s| [s["fullName"], s["stats"].first["splits"].first["stat"]["goals"]]}
-    home_assists = home_skaters.map    { |s| [s["fullName"], s["stats"].first["splits"].first["stat"]["assists"]]}
-
-    away_skaters = away_skaters.select { |s|    s["stats"].present? && s["stats"].first["splits"].first["stat"].present? }
-    away_goals   = away_skaters.map    { |s| [s["fullName"], s["stats"].first["splits"].first["stat"]["goals"]]}
-    away_assists = away_skaters.map    { |s| [s["fullName"], s["stats"].first["splits"].first["stat"]["assists"]]}  
-    
-    goals   = home_goals.to_h.merge(away_goals.to_h)
-    assists = home_assists.to_h.merge(away_assists.to_h)
-  
-    foo = {:goals => goals, :assists => assists }
-    foo
+    home_skaters = home_skaters.map { |s| [s["fullName"], PlayerStats.new(s).points] }
+    away_skaters = away_skaters.map { |s| [s["fullName"], PlayerStats.new(s).points] }
+        
+    points = home_skaters.to_h.merge(away_skaters.to_h)
+    points
   end
 
   def goals

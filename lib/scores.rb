@@ -41,10 +41,10 @@ class Scores
     home_skaters = jsonData["teams"].select { |team| team["id"] == home_team_id }.first["roster"]["roster"].map { |p| p["person"] }.select { |p| p["primaryPosition"]["code"] != "G" && p["rosterStatus"] != "I" }
     away_skaters = jsonData["teams"].select { |team| team["id"] == away_team_id }.first["roster"]["roster"].map { |p| p["person"] }.select { |p| p["primaryPosition"]["code"] != "G" && p["rosterStatus"] != "I" }
 
-    home_skaters = home_skaters.map { |s| [s["fullName"], PlayerStats.new(s).points] }
-    away_skaters = away_skaters.map { |s| [s["fullName"], PlayerStats.new(s).points] }
+    home_skaters = home_skaters.map { |s| [ ["name", s["fullName"] ] , ["points", PlayerStats.new(s).points] ].to_h }
+    away_skaters = away_skaters.map { |s| [ ["name", s["fullName"] ] , ["points", PlayerStats.new(s).points] ].to_h }
         
-    points = home_skaters.to_h.merge(away_skaters.to_h)
+    points = home_skaters + away_skaters
     points
   end
 

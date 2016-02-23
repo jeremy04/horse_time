@@ -30,6 +30,7 @@
 
   function top_points(players, goals)
   {
+    players = _.difference(spareHorses, players);
     players =  _.map(players, function(player) {
       hash = {};
 
@@ -56,39 +57,11 @@
     $.get("/season_stats.json", { horse_team: "<%= @horse_team %>", room_code: "<%= @room_code %>"},
       function(data)
       {
-        // Lead scorers
-        
-        var goals = data.goals;
-        var assists = data.assists;
-      
-        goals = _.map(goals, function(value, key) { 
-          var hsh = {};
-          hsh["name"] = key;
-          hsh["points"] = value;
-          return hsh;
-        });
-
-        assists = _.map(assists, function(value, key) { 
-          var hsh = {};
-
-          hsh["name"] = key;
-          hsh["points"] = value;
-          return hsh;
-        });
-
-        var points = goals.concat(assists);
-        points = _(points).groupBy("name");
-        
-        points = _(points).map(function(g, key) {
-          return { name: key, 
-                   points: _(g).reduce(function(m,x) { return m + x.points; }, 0) };
-        });
-
-        _.each(top_points(eligibleHorses.horse_team, points), function(player) {
+        _.each(top_points(eligibleHorses.horse_team, data), function(player) {
           $("#horse_team_scorers").append("<p class='indent'>" + _.keys(player)[0] + " : " +  _.values(player)[0] + "</p>");
         });
 
-        _.each(top_points(eligibleHorses.other, points), function(player) {
+        _.each(top_points(eligibleHorses.other, data), function(player) {
           $("#other_team_scorers").append("<p class='indent'>" + _.keys(player)[0] + " : " +  _.values(player)[0] + "</p>");
         });
 

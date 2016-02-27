@@ -58,11 +58,11 @@
       function(data)
       {
         _.each(top_points(eligibleHorses.horse_team, data), function(player) {
-          $("#horse_team_scorers").append("<p class='indent'>" + _.keys(player)[0] + " : " +  _.values(player)[0] + "</p>");
+          $("#other_team_scorers").append("<p class='indent'>" + _.keys(player)[0] + " : " +  _.values(player)[0] + "</p>");
         });
 
         _.each(top_points(eligibleHorses.other, data), function(player) {
-          $("#other_team_scorers").append("<p class='indent'>" + _.keys(player)[0] + " : " +  _.values(player)[0] + "</p>");
+          $("#horse_team_scorers").append("<p class='indent'>" + _.keys(player)[0] + " : " +  _.values(player)[0] + "</p>");
         });
 
       });
@@ -296,9 +296,6 @@
         draftOrder = <%= @players.to_json %>;
         roster = <%= @roster.to_json %>;
         eligibleHorses = data;
-        
-        console.log("Eligible Horses" + JSON.stringify(eligibleHorses));
-
         spareHorses = horsesLeft(roster, eligibleHorses);
 
         pickOrder = <%= @pick_order.to_json %>;

@@ -12,6 +12,7 @@ require 'active_support/all'
 require 'pp'
 require './cat_facts'
 require 'logger'
+require 'active_support/core_ext/hash/indifferent_access'
 
 enable :logging
 set :bind, '0.0.0.0'
@@ -58,7 +59,9 @@ end
 
 post '/update_pick.json' do
   content_type :json
-  players = JSON.parse(REDIS.hget(params[:room_code], "players"))
+  redis_players = REDIS.hget(params[:room_code], "players")
+  return { message: "There was an error", errors: ["All parties have left. Try logging out"]}.to_json if redis_players.nil?
+  players = JSON.parse(redis_players)
   horses = players.select { |h| h['name'] == params[:name] }.first["horses"]
   horses["horse_team"] << params[:horse_team] if params[:horse_team]
   horses["other_team"] << params[:other_team] if params[:other_team]
@@ -91,6 +94,7 @@ post '/login' do
   params[:room_code] = params[:room_code].upcase
   if params[:name].present? && params[:room_code].present? && RoomCodeValidator.room_has_players?(params[:room_code])
     players = JSON.parse(REDIS.hget(params[:room_code], "players"))
+    players = players.map { |p| p.with_indifferent_access }
     params[:name] = params[:name].gsub(/\s/,"")
     players <<  { name: params[:name], status: 'new',
                   horses: { horse_team: [], other_team: [] }
@@ -98,6 +102,9 @@ post '/login' do
     if players.size == 1
       REDIS.hset(params[:room_code], "room_manager", params[:name])
     end
+    
+    return "Someone with that name is already logged in" if players.uniq { |p| p[:name] }.size != players.size
+    players = players.uniq { |p| p[:name] }
 
     REDIS.hset(params[:room_code], "players", JSON.dump(players) )
     cookie_info = { room_code: params[:room_code], name: params[:name] }
@@ -111,7 +118,15 @@ end
 post "/logout" do
   name = JSON.parse(cookies[:horsetime])["name"]
   room_code = JSON.parse(cookies[:horsetime])["room_code"]
-  players = JSON.parse(REDIS.hget(room_code, "players"))
+  redis_players = REDIS.hget(room_code, "players")
+
+  # Manager left 
+  if redis_players.nil?
+    response.delete_cookie "horsetime"
+    redirect "/"
+  end
+
+  players = JSON.parse(redis_players)
 
   players = players.map do |player|
     player["status"] = "inactive" if player["name"] == name

@@ -1,6 +1,7 @@
 require 'mechanize'
 require 'json'
 require 'nokogiri'
+require 'active_support/all'
 
 class TeamIdentify
   attr_reader :other_team
@@ -10,7 +11,8 @@ class TeamIdentify
   end
 
   def determine_team
-    @agent = Mechanize.new
+    @agent = Mechanize.new{|a| a.ssl_version, a.verify_mode = :TLSv1_2, OpenSSL::SSL::VERIFY_NONE}
+
     page = @agent.get("http://www.nicetimeonice.com/api/seasons/20152016/games/")
     json = JSON.parse(page.content)
 
@@ -31,8 +33,8 @@ class TeamIdentify
   def get_link(team)
     page = @agent.get("http://www2.dailyfaceoff.com/teams/")
     doc = Nokogiri::HTML(page.body)
-    link = doc.css("#matchups_container a").map { |x| x.attributes["href"].value }.select { |x| x =~ /#{team.gsub(" ","-").downcase}/  }
-    link.first
+    link = doc.css("#matchups_container a").map { |x| x.attributes["href"].value }.select { |x| x =~ /#{team.gsub(/\W/," ").squish.gsub(" ", "-").downcase}/  }
+    "http://www2.dailyfaceoff.com/#{link.first}"
   end
 
   def determine_other_team(element)

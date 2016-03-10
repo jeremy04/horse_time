@@ -1,6 +1,8 @@
 require 'mechanize'
 require 'json'
 require 'nokogiri'
+require './lib/team_identify'
+require './lib/team_scrapper'
 
 class ActiveRoster
   def initialize(horse_team)
@@ -45,10 +47,22 @@ class ActiveRoster
       away_skaters = jsonData["teams"].select { |team| team["id"] == away_team_id }.first["roster"]["roster"].select { |p| p["person"]["primaryPosition"]["code"] != "G" && p["person"]["rosterStatus"] != "I" }.map { |p| p["person"]["fullName"] }
     end
 
+
+    i = TeamIdentify.new(@horse_team)
+    other_link, horse_link = i.determine_team
+
+    s = TeamScrapper.new
+    s.visit_roster(horse_link)
+    horse_lines = s.scrape_players[:players]
+
+    s2 = TeamScrapper.new
+    s2.visit_roster(other_link)
+    other_lines = s2.scrape_players[:players]
+
     if latest_game["homeTeam"] == @horse_team
-      return { :horse_team => home_skaters, :other => away_skaters }
+      return { :horse_team => home_skaters & horse_lines, :other => away_skaters & other_lines }
     else
-      return { :horse_team => away_skaters, :other => home_skaters }
+      return { :horse_team => away_skaters & other_lines, :other => home_skaters & horse_lines  }
     end
 
   end

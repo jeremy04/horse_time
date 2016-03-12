@@ -49,7 +49,7 @@ class ActiveRoster
 
 
     i = TeamIdentify.new(@horse_team)
-    other_link, horse_link = i.determine_team
+    horse_link, other_link = i.determine_team
 
     s = TeamScrapper.new
     s.visit_roster(horse_link)

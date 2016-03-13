@@ -15,6 +15,7 @@ require 'logger'
 require 'active_support/core_ext/hash/indifferent_access'
 
 enable :logging
+set :protection, :except => [:json_csrf]
 set :bind, '0.0.0.0'
 
 configure do

@@ -57,29 +57,32 @@ post '/generate_draft.json' do
   ["Generated"].to_json
 end
 
-post '/update_pick.json' do
-  content_type :json
-  redis_players = REDIS.hget(params[:room_code], "players")
-  return { message: "There was an error", errors: ["All parties have left. Try logging out"]}.to_json if redis_players.nil?
-  players = JSON.parse(redis_players)
-  horses = players.select { |h| h['name'] == params[:name] }.first["horses"]
-  horses["horse_team"] << params[:horse_team] if params[:horse_team]
-  horses["other_team"] << params[:other_team] if params[:other_team]
-  players.each do |player|
-    if player["name"] == params[:name]
-     player["horses"] = horses 
-   end
-  end
 
-  if PlayersValidator.new(players).valid?
-    REDIS.hset(params[:room_code], "players", JSON.dump(players))
-    pickCount = REDIS.hget(params[:room_code], "pickCount").to_i
-    pickCount+=1
-    REDIS.hset(params[:room_code], "pickCount", pickCount)
-    REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * 4) 
-    { message: "Updated sucessfully" , errors: []}.to_json
-  else
-    { message: "There was an error", errors: ["Cant pick the same guy twice bro"]}.to_json
+[ :get, :post ].each do |method|
+  send method, '/update_pick.json' do 
+    content_type :json
+    redis_players = REDIS.hget(params[:room_code], "players")
+    return { message: "There was an error", errors: ["All parties have left. Try logging out"]}.to_json if redis_players.nil?
+    players = JSON.parse(redis_players)
+    horses = players.select { |h| h['name'] == params[:name] }.first["horses"]
+    horses["horse_team"] << params[:horse_team] if params[:horse_team]
+    horses["other_team"] << params[:other_team] if params[:other_team]
+    players.each do |player|
+      if player["name"] == params[:name]
+       player["horses"] = horses 
+     end
+    end
+
+    if PlayersValidator.new(players).valid?
+      REDIS.hset(params[:room_code], "players", JSON.dump(players))
+      pickCount = REDIS.hget(params[:room_code], "pickCount").to_i
+      pickCount+=1
+      REDIS.hset(params[:room_code], "pickCount", pickCount)
+      REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * 4) 
+      { message: "Updated sucessfully" , errors: []}.to_json
+    else
+      { message: "There was an error", errors: ["Cant pick the same guy twice bro"]}.to_json
+    end
   end
 end
 

@@ -277,6 +277,10 @@ get '/cat_fact' do
   "#{CatFacts.new.random_fact}"
 end
 
+get '/ATriggerVerify.txt' do
+  send_file 'ATriggerVerify.txt'
+end
+
 get '/flux' do
   send_file 'flux.html'
 end

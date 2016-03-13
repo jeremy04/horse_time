@@ -57,7 +57,7 @@ post '/generate_draft.json' do
   ["Generated"].to_json
 end
 
-post '/update_pick.json' do
+get '/update_pick.json' do
   content_type :json
   redis_players = REDIS.hget(params[:room_code], "players")
   return { message: "There was an error", errors: ["All parties have left. Try logging out"]}.to_json if redis_players.nil?

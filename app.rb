@@ -252,7 +252,9 @@ get %r{/room/([A-Z0-9]{4})} do
                "url" => "https://horsetime.herokuapp.com/update_pick.json?room_code=#{@room_code}&name=#{player}&game_team=#{horse_team}",
                "timeSlice" => "0minute",
                "first" => current_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
-               "tag_key1" => current_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+               "tag_key1" => current_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+               "tag_type" => "testing"
+
             }.to_query
 
             uri = URI("https://api.atrigger.com/v1/tasks/create?key=#{key}&secret=#{secret}&#{params}")

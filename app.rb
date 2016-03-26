@@ -244,9 +244,10 @@ get %r{/room/([A-Z0-9]{4})} do
             key =  ENV["ATRIGGER_KEY"]
             secret = ENV["ATRIGGER_SECRET"]
 
+            horse_team =  REDIS.hget(@room_code, "horse_team")
             params = {
                "count" => "1",
-               "url" => "https://horsetime.herokuapp.com/update_pick.json?room_code=#{@room_code}&name=#{player}&horse_team=Pittsburgh Penguins",
+               "url" => "https://horsetime.herokuapp.com/update_pick.json?room_code=#{@room_code}&name=#{player}&horse_team=#{horse_team}",
                "timeSlice" => "0minute",
                "first" => current_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
                "tag_key1" => current_time.strftime("%Y-%m-%dT%H:%M:%SZ")

@@ -13,6 +13,8 @@ require 'pp'
 require './cat_facts'
 require 'logger'
 require 'active_support/core_ext/hash/indifferent_access'
+require 'uri'
+require 'net/http'
 
 enable :logging
 set :protection, :except => [:json_csrf]
@@ -59,33 +61,96 @@ post '/generate_draft.json' do
 end
 
 
-[ :get, :post ].each do |method|
-  send method, '/update_pick.json' do 
-    content_type :json
-    redis_players = REDIS.hget(params[:room_code], "players")
-    return { message: "There was an error", errors: ["All parties have left. Try logging out"]}.to_json if redis_players.nil?
-    players = JSON.parse(redis_players)
-    horses = players.select { |h| h['name'] == params[:name] }.first["horses"]
-    horses["horse_team"] << params[:horse_team] if params[:horse_team]
-    horses["other_team"] << params[:other_team] if params[:other_team]
-    players.each do |player|
-      if player["name"] == params[:name]
-       player["horses"] = horses 
-     end
-    end
+get '/update_pick.json' do 
+  content_type :json
+  redis_players = REDIS.hget(params[:room_code], "players")
+  return { message: "There was an error", errors: ["All parties have left. Try logging out"]}.to_json if redis_players.nil?
+  players = JSON.parse(redis_players)
+  horses = players.select { |h| h['name'] == params[:name] }.first["horses"]
+  horses_picked = players.map { |x| x["horses"].values.flatten }.flatten
 
-    if PlayersValidator.new(players).valid?
-      REDIS.hset(params[:room_code], "players", JSON.dump(players))
-      pickCount = REDIS.hget(params[:room_code], "pickCount").to_i
-      pickCount+=1
-      REDIS.hset(params[:room_code], "pickCount", pickCount)
-      REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * 4) 
-      { message: "Updated sucessfully" , errors: []}.to_json
-    else
-      { message: "There was an error", errors: ["Cant pick the same guy twice bro"]}.to_json
-    end
+
+  teams_left = horses.keys.select { |k| horses[k].size < 2 }
+  roster = Scores.new(params[:game_team]).season_goals
+
+  roster = roster.reject { |h| horses_picked.include?(h["name"]) }
+
+  if teams_left.size > 1
+    top_player = roster.sort_by { |x| x["points"] }.last
+    horses[top_player["location"]] << top_player["name"]
+  else
+    top_player = roster.select { |s| s["location"] == teams_left.first }.sort_by { |x| x["points"] }.last
+    horses[teams_left.first] << top_player["name"] if teams_left.first
+  end
+
+  players.each do |player|
+    if player["name"] == params[:name]
+     player["horses"] = horses 
+   end
+  end
+
+  horses_per = REDIS.hget(params[:room_code], "horses_per").to_i
+
+  if PlayersValidator.new(players, horses_per).valid?
+    REDIS.hset(params[:room_code], "players", JSON.dump(players))
+    pickCount = REDIS.hget(params[:room_code], "pickCount").to_i
+    pickCount+=1
+    REDIS.hset(params[:room_code], "pickCount", pickCount)
+    REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * (2 * horses_per )) 
+    { message: "Updated sucessfully" , errors: []}.to_json
+  else
+    { message: "There was an error", errors: ["Cant pick the same guy twice bro"]}.to_json
   end
 end
+
+
+post '/update_pick.json' do 
+  content_type :json
+  redis_players = REDIS.hget(params[:room_code], "players")
+  return { message: "There was an error", errors: ["All parties have left. Try logging out"]}.to_json if redis_players.nil?
+  players = JSON.parse(redis_players)
+  horses = players.select { |h| h['name'] == params[:name] }.first["horses"]
+  horses["horse_team"] << params[:horse_team] if params[:horse_team]
+  horses["other_team"] << params[:other_team] if params[:other_team]
+  players.each do |player|
+    if player["name"] == params[:name]
+     player["horses"] = horses 
+   end
+  end
+
+
+  horses_per = REDIS.hget(params[:room_code], "horses_per").to_i
+  if PlayersValidator.new(players, horses_per).valid?
+
+    auto_picks = JSON.parse(REDIS.lpop("#{params[:room_code]}_autopick"))
+    if auto_picks.key?(params[:name])
+      tag_key = DateTime.parse(auto_picks.values.first).strftime("%Y-%m-%dT%H:%M:%SZ")
+      key =  ENV["ATRIGGER_KEY"]
+      secret = ENV["ATRIGGER_SECRET"]
+      params = {
+        "tag_key1" => tag_key
+      }.to_query
+
+      uri = URI("https://api.atrigger.com/v1/tasks/delete?key=#{key}&secret=#{secret}&#{params}")
+            
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+      http.ssl_version = :TLSv1_2
+      http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      page = http.get(uri.request_uri)
+    end
+
+    REDIS.hset(params[:room_code], "players", JSON.dump(players))
+    pickCount = REDIS.hget(params[:room_code], "pickCount").to_i
+    pickCount+=1
+    REDIS.hset(params[:room_code], "pickCount", pickCount)
+    REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * (2 * horses_per )) 
+    { message: "Updated sucessfully" , errors: []}.to_json
+  else
+    { message: "There was an error", errors: ["Cant pick the same guy twice bro"]}.to_json
+  end
+end
+
 
 get '/get_players.json' do
   content_type :json
@@ -165,6 +230,40 @@ get %r{/room/([A-Z0-9]{4})} do
       rounds = @horses_per * 2
       pick_order = PickOrder.new(@players, rounds)
       @pick_order = pick_order.generate_pick_order
+
+
+      auto_pick_key = "#{@room_code}_autopick"
+      
+      unless REDIS.exists(auto_pick_key)
+        REDIS.multi do
+          current_time = Time.now.in_time_zone('America/New_York')
+          @pick_order.sort_by { |pick| pick }.map { |player| player[1] }.each do |player|
+            current_time += 4.minute
+            REDIS.rpush "#{@room_code}_autopick", JSON.dump({player => current_time })
+
+            key =  ENV["ATRIGGER_KEY"]
+            secret = ENV["ATRIGGER_SECRET"]
+
+            params = {
+               "count" => "1",
+               "url" => "https://horsetime.herokuapp.com/update_pick.json?room_code=#{@room_code}&name=#{player}&horse_team=Pittsburgh Penguins",
+               "timeSlice" => "0minute",
+               "first" => current_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+               "tag_key1" => current_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+            }.to_query
+
+            uri = URI("https://api.atrigger.com/v1/tasks/create?key=#{key}&secret=#{secret}&#{params}")
+            
+            http = Net::HTTP.new(uri.host, uri.port)
+            http.use_ssl = true
+            http.ssl_version = :TLSv1_2
+            http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+            page = http.get(uri.request_uri)
+          end
+        end
+        REDIS.expire(auto_pick_key, 5 * 60 * 60)
+      end
+
       @roster = JSON.parse(players).select { |p| p["status"] != 'inactive' }.map { |acc, h| { acc["name"] => acc["horses"] } }.reduce(:merge)
       team_playing =  @teams.select { |team| team.first == REDIS.hget(@room_code, "horse_team") }.first
       if team_playing

@@ -25,7 +25,7 @@
       return obj.horse_team.concat(obj.other_team) 
     }));
 
-    return _.difference(eligibleHorses.horse_team.concat(eligibleHorses.other), used);
+    return _.difference(eligibleHorses.horse_team.concat(eligibleHorses.other_team), used);
   }
 
   function top_points(players, goals)
@@ -52,21 +52,21 @@
     return players.slice(0, 5);
   }
 
-  function displayStats(eligibleHorses)
+  function displayRoster(eligibleHorses, data)
   {
-    $.get("/season_stats.json", { horse_team: "<%= @horse_team %>", room_code: "<%= @room_code %>"},
-      function(data)
-      {
-        _.each(top_points(eligibleHorses.horse_team, data), function(player) {
-          $("#other_team_scorers").append("<p class='indent'>" + _.keys(player)[0] + " : " +  _.values(player)[0] + "</p>");
-        });
 
-        _.each(top_points(eligibleHorses.other, data), function(player) {
-          $("#horse_team_scorers").append("<p class='indent'>" + _.keys(player)[0] + " : " +  _.values(player)[0] + "</p>");
-        });
+    _.each(top_points(eligibleHorses.horse_team, data), function(player) {
+      $("#other_team_scorers").append("<p class='indent'>" + _.keys(player)[0] + " : " +  _.values(player)[0] + "</p>");
+    });
 
-      });
+    _.each(top_points(eligibleHorses.other_team, data), function(player) {
+      $("#horse_team_scorers").append("<p class='indent'>" + _.keys(player)[0] + " : " +  _.values(player)[0] + "</p>");
+    });
 
+  }
+
+  function displayGoals()
+  {
     $.get("/scores.json", { horse_team: "<%= @horse_team %>", room_code: "<%= @room_code %>" },function(data) 
       {
        
@@ -99,7 +99,7 @@
         _.each(_.keys(roster), function(value) {
          $("#" + value + "_horses h4").append(" - " + shotTotals[value])
         });
-  
+
       });
   }
 
@@ -193,7 +193,7 @@
 
         var currentPicks = roster[currentPlayer];
 
-        if (_.contains(eligibleHorses.other, selection) && currentPicks.other_team.length == <%= @horses_per %>)
+        if (_.contains(eligibleHorses.other_team, selection) && currentPicks.other_team.length == <%= @horses_per %>)
         {
           alert("You already have the limit for other team bro");
           return;
@@ -209,7 +209,7 @@
 
         $(this).prop("disabled",true);
 
-        if(_.contains(eligibleHorses.other, selection)) {
+        if(_.contains(eligibleHorses.other_team, selection)) {
           currentPicks.other_team.push(selection);
           var other_team_horse = selection;
         }
@@ -292,10 +292,18 @@
     }
 
 
-    $.get("/players.json", { horse_team: "<%= @horse_team %>", room_code: "<%= @room_code %>" }, function( data ) {
+    $.get("/season_stats.json", { horse_team: "<%= @horse_team %>", room_code: "<%= @room_code %>" }, function( data ) {
         draftOrder = <%= @players.to_json %>;
         roster = <%= @roster.to_json %>;
-        eligibleHorses = data;
+        
+        // transform season_stats to eligibleHorses
+
+        eligibleHorses = _.map(data, function(obj) { return [obj.location, obj.name] });
+        eligibleHorses = _.groupBy(eligibleHorses, function(obj) { return obj[0] });
+        eligibleHorses = _.mapObject(eligibleHorses, function(value, key) { 
+          return _.map(value, function(p) { return p[1]; }) });
+        console.log
+
         spareHorses = horsesLeft(roster, eligibleHorses);
 
         pickOrder = <%= @pick_order.to_json %>;
@@ -303,7 +311,8 @@
         show_draft(pickOrder);
         generateDraft(draftOrder, pickOrder);
 
-        displayStats(eligibleHorses);
+        displayRoster(eligibleHorses, data);
+        displayGoals();
 
     });
 

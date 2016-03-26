@@ -19,30 +19,34 @@ class Scores
     json = json.select { |x| x["awayTeam"] == @horse_team || x["homeTeam"] == @horse_team }
     latest_game = horse_games(json).sort_by { |h| Date.parse(h["date"]) }.last
 
-    begin
-      agent = Mechanize.new {|a| a.ssl_version, a.verify_mode = :TLSv1_2, OpenSSL::SSL::VERIFY_NONE}
-      page = agent.get("https://statsapi.web.nhl.com/api/v1/game/#{latest_game["gameID"]}/feed/live?site=en_nhl")
-    rescue Mechanize::ResponseCodeError => e
-      return {:horse_team => [], :other => [] }
-    end
+    uri = URI("https://statsapi.web.nhl.com/api/v1/game/#{latest_game["gameID"]}/feed/live?site=en_nhl")
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = true
+    http.ssl_version = :TLSv1_2
+    http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+    page = http.get(uri.request_uri)
+
 
     jsonData = JSON.parse(page.body)
-    home_team_id = jsonData["gameData"]["teams"]["home"]["id"]
-    away_team_id = jsonData["gameData"]["teams"]["away"]["id"]
-    begin
-      agent = Mechanize.new {|a| a.ssl_version, a.verify_mode = :TLSv1_2, OpenSSL::SSL::VERIFY_NONE}
-      page = agent.get("https://statsapi.web.nhl.com/api/v1/teams?site=en_nhl&teamId=#{home_team_id},#{away_team_id}&expand=team.roster,roster.person,person.stats&stats=statsSingleSeason")
-    rescue Mechanize::ResponseCodeError => e
-      return {:horse_team => [], :other => [] }
-    end
+    home_team_id   = jsonData["gameData"]["teams"]["home"]["id"]
+    away_team_id   = jsonData["gameData"]["teams"]["away"]["id"]
+    home_team_name = jsonData["gameData"]["teams"]["home"]["name"]
+    away_team_name = jsonData["gameData"]["teams"]["away"]["name"]
+   
+    uri = URI("https://statsapi.web.nhl.com/api/v1/teams?site=en_nhl&teamId=#{home_team_id},#{away_team_id}&expand=team.roster,roster.person,person.stats&stats=statsSingleSeason")
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = true
+    http.ssl_version = :TLSv1_2
+    http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+    page = http.get(uri.request_uri)
 
     jsonData = JSON.parse(page.body)
 
     home_skaters = jsonData["teams"].select { |team| team["id"] == home_team_id }.first["roster"]["roster"].map { |p| p["person"] }.select { |p| p["primaryPosition"]["code"] != "G" && p["rosterStatus"] != "I" }
     away_skaters = jsonData["teams"].select { |team| team["id"] == away_team_id }.first["roster"]["roster"].map { |p| p["person"] }.select { |p| p["primaryPosition"]["code"] != "G" && p["rosterStatus"] != "I" }
 
-    home_skaters = home_skaters.map { |s| [ ["name", s["fullName"] ] , ["points", PlayerStats.new(s).points] ].to_h }
-    away_skaters = away_skaters.map { |s| [ ["name", s["fullName"] ] , ["points", PlayerStats.new(s).points] ].to_h }
+    home_skaters = home_skaters.map { |s| [ ["name", s["fullName"] ] , ["points", PlayerStats.new(s).points], ["team", home_team_name], ["location", "horse_team"] ].to_h }
+    away_skaters = away_skaters.map { |s| [ ["name", s["fullName"] ] , ["points", PlayerStats.new(s).points], ["team", away_team_name], ["location", "other_team"] ].to_h }
         
     points = home_skaters + away_skaters
     points

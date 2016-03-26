@@ -262,7 +262,6 @@ get %r{/room/([A-Z0-9]{4})} do
             http.ssl_version = :TLSv1_2
             http.verify_mode = OpenSSL::SSL::VERIFY_NONE
             page = http.get(uri.request_uri)
-          end
         end
         REDIS.expire(auto_pick_key, 5 * 60 * 60)
       end

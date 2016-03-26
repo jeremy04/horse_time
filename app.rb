@@ -235,12 +235,14 @@ get %r{/room/([A-Z0-9]{4})} do
       auto_pick_key = "#{@room_code}_autopick"
       
       unless REDIS.exists(auto_pick_key)
-        REDIS.multi do
+        
           current_time = Time.now.in_time_zone('America/New_York')
           @pick_order.sort_by { |pick| pick }.map { |player| player[1] }.each do |player|
             current_time += 4.minute
-            REDIS.rpush "#{@room_code}_autopick", JSON.dump({player => current_time })
-
+            
+            REDIS.multi do
+              REDIS.rpush "#{@room_code}_autopick", JSON.dump({player => current_time })
+            end
             key =  ENV["ATRIGGER_KEY"]
             secret = ENV["ATRIGGER_SECRET"]
 

@@ -261,7 +261,7 @@ get %r{/room/([A-Z0-9]{4})} do
         
           current_time = Time.now.utc
           @pick_order.sort_by { |pick| pick }.map { |player| player[1] }.each do |player|
-            current_time += 1.minute
+            current_time += 4.minute
             
             REDIS.multi do
               REDIS.rpush "#{@room_code}_autopick", JSON.dump({player => current_time })

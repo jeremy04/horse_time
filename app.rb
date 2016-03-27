@@ -127,11 +127,11 @@ post '/update_pick.json' do
       tag_key = DateTime.parse(auto_picks.values.first).strftime("%Y-%m-%dT%H:%M:%SZ")
       key =  ENV["ATRIGGER_KEY"]
       secret = ENV["ATRIGGER_SECRET"]
-      params = {
+      delete_params = {
         "tag_key1" => tag_key
       }.to_query
 
-      uri = URI("https://api.atrigger.com/v1/tasks/delete?key=#{key}&secret=#{secret}&#{params}")
+      uri = URI("https://api.atrigger.com/v1/tasks/delete?key=#{key}&secret=#{secret}&#{delete_params}")
             
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = true
@@ -139,7 +139,7 @@ post '/update_pick.json' do
       http.verify_mode = OpenSSL::SSL::VERIFY_NONE
       page = http.get(uri.request_uri)
     end
-
+    
     REDIS.hset(params[:room_code], "players", JSON.dump(players))
     pickCount = REDIS.hget(params[:room_code], "pickCount").to_i
     pickCount+=1
@@ -247,7 +247,7 @@ get %r{/room/([A-Z0-9]{4})} do
             secret = ENV["ATRIGGER_SECRET"]
 
             horse_team =  REDIS.hget(@room_code, "horse_team")
-            params = {
+            create_params = {
                "count" => "1",
                "url" => "https://horsetime.herokuapp.com/update_pick.json?room_code=#{@room_code}&name=#{player}&game_team=#{horse_team}",
                "timeSlice" => "0minute",
@@ -257,7 +257,7 @@ get %r{/room/([A-Z0-9]{4})} do
 
             }.to_query
 
-            uri = URI("https://api.atrigger.com/v1/tasks/create?key=#{key}&secret=#{secret}&#{params}")
+            uri = URI("https://api.atrigger.com/v1/tasks/create?key=#{key}&secret=#{secret}&#{create_params}")
             
             http = Net::HTTP.new(uri.host, uri.port)
             http.use_ssl = true

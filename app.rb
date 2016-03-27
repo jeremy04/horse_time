@@ -112,13 +112,13 @@ get '/auto_pick.json' do
     REDIS.hset(params[:room_code], "pickCount", pickCount)
     REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * (2 * horses_per ))
     REDIS.lpop("#{params[:room_code]}_autopick") 
-    PUBNUB.publish(
-      channel: 'horse_selected',
-      message: { player: params[:name],
-                 horse: selection
-               },
-      callback: lambda do |message| puts message end
-    )
+    PUBNUB.publish({
+      "channel" => 'horse_selected',
+      "message" => { "player" => params[:name],
+                     "horse" => selection
+                   },
+      "callback" => lambda do |message| puts message end
+    })
 
     { message: "Updated sucessfully" , errors: []}.to_json
   else

@@ -61,7 +61,7 @@ post '/generate_draft.json' do
 end
 
 
-get '/update_pick.json' do 
+get '/auto_pick.json' do 
   content_type :json
   redis_players = REDIS.hget(params[:room_code], "players")
   return { message: "There was an error", errors: ["All parties have left. Try logging out"]}.to_json if redis_players.nil?
@@ -139,7 +139,7 @@ post '/update_pick.json' do
       http.verify_mode = OpenSSL::SSL::VERIFY_NONE
       page = http.get(uri.request_uri)
     end
-    
+
     REDIS.hset(params[:room_code], "players", JSON.dump(players))
     pickCount = REDIS.hget(params[:room_code], "pickCount").to_i
     pickCount+=1
@@ -249,7 +249,7 @@ get %r{/room/([A-Z0-9]{4})} do
             horse_team =  REDIS.hget(@room_code, "horse_team")
             create_params = {
                "count" => "1",
-               "url" => "https://horsetime.herokuapp.com/update_pick.json?room_code=#{@room_code}&name=#{player}&game_team=#{horse_team}",
+               "url" => "https://horsetime.herokuapp.com/auto_pick.json?room_code=#{@room_code}&name=#{player}&game_team=#{horse_team}",
                "timeSlice" => "0minute",
                "first" => current_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
                "tag_key1" => current_time.strftime("%Y-%m-%dT%H:%M:%SZ"),

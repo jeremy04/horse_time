@@ -96,7 +96,8 @@ get '/auto_pick.json' do
     pickCount = REDIS.hget(params[:room_code], "pickCount").to_i
     pickCount+=1
     REDIS.hset(params[:room_code], "pickCount", pickCount)
-    REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * (2 * horses_per )) 
+    REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * (2 * horses_per ))
+    REDIS.lpop("#{params[:room_code]}_autopick") 
     { message: "Updated sucessfully" , errors: []}.to_json
   else
     { message: "There was an error", errors: ["Cant pick the same guy twice bro"]}.to_json

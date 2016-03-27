@@ -236,7 +236,7 @@ get %r{/room/([A-Z0-9]{4})} do
       
       unless REDIS.exists(auto_pick_key)
         
-          current_time = Time.now.in_time_zone('America/New_York')
+          current_time = Time.now.utc
           @pick_order.sort_by { |pick| pick }.map { |player| player[1] }.each do |player|
             current_time += 4.minute
             

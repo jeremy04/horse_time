@@ -15,6 +15,7 @@ require 'logger'
 require 'active_support/core_ext/hash/indifferent_access'
 require 'uri'
 require 'net/http'
+require 'pubnub'
 
 enable :logging
 set :protection, :except => [:json_csrf]
@@ -25,6 +26,15 @@ configure do
   require 'redis'
   uri = URI.parse(ENV["REDISCLOUD_URL"] || "http://127.0.0.1:6379")
   REDIS = Redis.new(:host => uri.host, :port => uri.port, :password => uri.password)
+  puts "Pub nub starting" 
+  PUBNUB = Pubnub.new(
+    ENV["PUBNUB_PUBKEY"],
+    ENV["PUBNUB_SUBKEY"],
+    '', #secret key
+    '',
+    false
+  )
+
 end
 
 class RoomCodeValidator
@@ -77,10 +87,12 @@ get '/auto_pick.json' do
 
   if teams_left.size > 1
     top_player = roster.sort_by { |x| x["points"] }.last
-    horses[top_player["location"]] << top_player["name"]
+    selection = top_player["name"]
+    horses[top_player["location"]] << selection
   else
     top_player = roster.select { |s| s["location"] == teams_left.first }.sort_by { |x| x["points"] }.last
-    horses[teams_left.first] << top_player["name"] if teams_left.first
+    selection = top_player["name"]
+    horses[teams_left.first] << selection if teams_left.first
   end
 
   players.each do |player|
@@ -98,6 +110,14 @@ get '/auto_pick.json' do
     REDIS.hset(params[:room_code], "pickCount", pickCount)
     REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * (2 * horses_per ))
     REDIS.lpop("#{params[:room_code]}_autopick") 
+    PUBNUB.publish(
+      channel: 'horse_selected',
+      message: { player: params[:name],
+                 horse: selection
+               },
+      callback: lambda do |message| puts message end
+    )
+
     { message: "Updated sucessfully" , errors: []}.to_json
   else
     { message: "There was an error", errors: ["Cant pick the same guy twice bro"]}.to_json
@@ -239,7 +259,7 @@ get %r{/room/([A-Z0-9]{4})} do
         
           current_time = Time.now.utc
           @pick_order.sort_by { |pick| pick }.map { |player| player[1] }.each do |player|
-            current_time += 4.minute
+            current_time += 1.minute
             
             REDIS.multi do
               REDIS.rpush "#{@room_code}_autopick", JSON.dump({player => current_time })

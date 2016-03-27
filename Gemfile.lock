@@ -7,15 +7,26 @@ GEM
       minitest (~> 5.1)
       thread_safe (~> 0.3, >= 0.3.4)
       tzinfo (~> 1.1)
+    addressable (2.4.0)
     backports (3.6.7)
     byebug (8.2.2)
+    cookiejar (0.3.0)
     daemons (1.2.3)
     domain_name (0.5.25)
       unf (>= 0.0.5, < 1.0.0)
+    em-http-request (1.1.3)
+      addressable (>= 2.3.4)
+      cookiejar (<= 0.3.0)
+      em-socksify (>= 0.3)
+      eventmachine (>= 1.0.3)
+      http_parser.rb (>= 0.6.0)
+    em-socksify (0.3.1)
+      eventmachine (>= 1.0.0.beta.4)
     erubis (2.7.0)
     eventmachine (1.0.8)
     http-cookie (1.0.2)
       domain_name (~> 0.5)
+    http_parser.rb (0.6.0)
     i18n (0.7.0)
     json (1.7.7)
     mechanize (2.7.3)
@@ -36,6 +47,9 @@ GEM
     nokogiri (1.6.6.2)
       mini_portile (~> 0.6.0)
     ntlm-http (0.1.1)
+    pubnub (0.1.12)
+      em-http-request (>= 1.0.2)
+      json
     rack (1.6.4)
     rack-protection (1.5.3)
       rack
@@ -78,6 +92,7 @@ DEPENDENCIES
   erubis
   json
   mechanize
+  pubnub (~> 0.1)
   rake
   redis
   rollbar (~> 2.7.1)

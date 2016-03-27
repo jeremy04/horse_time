@@ -10,6 +10,7 @@ gem 'erubis'
 gem 'thin'
 gem 'rollbar', '~> 2.7.1'
 gem 'rake'
+gem 'pubnub', '~> 0.1'
 
 group :development do
   gem 'byebug'

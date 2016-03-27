@@ -91,8 +91,10 @@ get '/auto_pick.json' do
     horses[top_player["location"]] << selection
   else
     top_player = roster.select { |s| s["location"] == teams_left.first }.sort_by { |x| x["points"] }.last
-    selection = top_player["name"]
-    horses[teams_left.first] << selection if teams_left.first
+    if teams_left.first
+      selection = top_player["name"]
+      horses[teams_left.first] << selection
+    end
   end
 
   players.each do |player|
@@ -270,6 +272,7 @@ get %r{/room/([A-Z0-9]{4})} do
             horse_team =  REDIS.hget(@room_code, "horse_team")
             create_params = {
                "count" => "1",
+               "retries" => "0",
                "url" => "https://horsetime.herokuapp.com/auto_pick.json?room_code=#{@room_code}&name=#{player}&game_team=#{horse_team}",
                "timeSlice" => "0minute",
                "first" => current_time.strftime("%Y-%m-%dT%H:%M:%SZ"),

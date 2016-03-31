@@ -120,6 +120,9 @@
       {
         pickCount = data.pickCount;
         nextPlayer = pickOrder[pickCount];
+        
+        $("#autodraft").val(nextPlayer);
+
         jQuery.noConflict();
         $("input[name=\"" + nextPlayer + "\"]").autocomplete({
           orientation: "auto",
@@ -160,6 +163,8 @@
   {
     $("#" + pickOrder[pickCount]).css("color","red");
     
+    $("#autodraft").val(pickOrder[pickCount]);
+
     pubnub.subscribe({
       channel: 'horse_selected',
       message: updateRound,
@@ -345,6 +350,19 @@
     </div>
   </div>
 </div>
+<% if @manager == @user %>
+<div class="col-md-4">
+  <h2>AutoDraft</h2>
+  <div>
+    <form class="navbar-form navbar-right" method="get" action="/auto_pick.json" role="form">
+    <input type="hidden" name="game_team" value="<%= @horse_team %>">
+    <input type="hidden" name="room_code" value="<%= @room_code %>">
+    <input type='hidden' name="name" id='autodraft'>
+    <button type="submit" class="btn btn-primary btn-lg" role="button">Autodraft</a>
+
+  </div>
+</div>
+<% end %>
 
 </div>
 

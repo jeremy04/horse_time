@@ -80,7 +80,7 @@ get '/auto_pick.json' do
   horses_picked = players.map { |x| x["horses"].values.flatten }.flatten
 
 
-  teams_left = horses.keys.select { |k| horses[k].size < 2 }
+  teams_left = horses.keys.select { |k| horses[k].size <= 2 }
   roster = Scores.new(params[:game_team]).season_goals
 
   roster = roster.reject { |h| horses_picked.include?(h["name"]) }
@@ -91,10 +91,8 @@ get '/auto_pick.json' do
     horses[top_player["location"]] << selection
   else
     top_player = roster.select { |s| s["location"] == teams_left.first }.sort_by { |x| x["points"] }.last
-    if teams_left.first
-      selection = top_player["name"]
-      horses[teams_left.first] << selection
-    end
+    selection = top_player["name"]
+    horses[teams_left.first] << selection 
   end
 
   players.each do |player|
@@ -111,9 +109,11 @@ get '/auto_pick.json' do
     pickCount+=1
     REDIS.hset(params[:room_code], "pickCount", pickCount)
     REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * (2 * horses_per ))
-    REDIS.lpop("#{params[:room_code]}_autopick") 
+    
+    #REDIS.lpop("#{params[:room_code]}_autopick") 
+    
     PUBNUB.publish({
-      "channel" => 'horse_selected',
+      "channel" => "horse_selected",
       "message" => { "player" => params[:name],
                      "horse" => selection
                    },
@@ -145,23 +145,8 @@ post '/update_pick.json' do
   horses_per = REDIS.hget(params[:room_code], "horses_per").to_i
   if PlayersValidator.new(players, horses_per).valid?
 
-    auto_picks = JSON.parse(REDIS.lpop("#{params[:room_code]}_autopick"))
-    if auto_picks.key?(params[:name])
-      tag_key = DateTime.parse(auto_picks.values.first).strftime("%Y-%m-%dT%H:%M:%SZ")
-      key =  ENV["ATRIGGER_KEY"]
-      secret = ENV["ATRIGGER_SECRET"]
-      delete_params = {
-        "tag_key1" => tag_key
-      }.to_query
-
-      uri = URI("https://api.atrigger.com/v1/tasks/delete?key=#{key}&secret=#{secret}&#{delete_params}")
-            
-      http = Net::HTTP.new(uri.host, uri.port)
-      http.use_ssl = true
-      http.ssl_version = :TLSv1_2
-      http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-      page = http.get(uri.request_uri)
-    end
+    # auto_pick = AutoPick.new(REDIS)
+    # auto_pick.delete_next_scheduled_job(params[:room_code])
 
     REDIS.hset(params[:room_code], "players", JSON.dump(players))
     pickCount = REDIS.hget(params[:room_code], "pickCount").to_i
@@ -254,43 +239,8 @@ get %r{/room/([A-Z0-9]{4})} do
       pick_order = PickOrder.new(@players, rounds)
       @pick_order = pick_order.generate_pick_order
 
-
-      auto_pick_key = "#{@room_code}_autopick"
-      
-      unless REDIS.exists(auto_pick_key)
-        
-          current_time = Time.now.utc
-          @pick_order.sort_by { |pick| pick }.map { |player| player[1] }.each do |player|
-            current_time += 4.minute
-            
-            REDIS.multi do
-              REDIS.rpush "#{@room_code}_autopick", JSON.dump({player => current_time })
-            end
-            key =  ENV["ATRIGGER_KEY"]
-            secret = ENV["ATRIGGER_SECRET"]
-
-            horse_team =  REDIS.hget(@room_code, "horse_team")
-            create_params = {
-               "count" => "1",
-               "retries" => "0",
-               "url" => "https://horsetime.herokuapp.com/auto_pick.json?room_code=#{@room_code}&name=#{player}&game_team=#{horse_team}",
-               "timeSlice" => "0minute",
-               "first" => current_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
-               "tag_key1" => current_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
-               "tag_type" => "testing"
-
-            }.to_query
-
-            uri = URI("https://api.atrigger.com/v1/tasks/create?key=#{key}&secret=#{secret}&#{create_params}")
-            
-            http = Net::HTTP.new(uri.host, uri.port)
-            http.use_ssl = true
-            http.ssl_version = :TLSv1_2
-            http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-            page = http.get(uri.request_uri)
-        end
-        REDIS.expire(auto_pick_key, 5 * 60 * 60)
-      end
+      # auto_pick = AutoPick.new(REDIS)
+      # auto_pick.create_scheduled_jobs(@room_code, @pick_order)
 
       @roster = JSON.parse(players).select { |p| p["status"] != 'inactive' }.map { |acc, h| { acc["name"] => acc["horses"] } }.reduce(:merge)
       team_playing =  @teams.select { |team| team.first == REDIS.hget(@room_code, "horse_team") }.first

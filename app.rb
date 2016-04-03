@@ -292,57 +292,44 @@ post '/generate_room_code.json' do
   {:room_code => activation_code}.to_json
 end
 
+class CacheWrapper
+  def initialize(horse_team, room_code)
+    @horse_team = horse_team
+    @room_code = room_code
+  end
+
+  def get_cached(model, cache_key)
+    if @room_code && REDIS.hexists(@horse_team.gsub(/\s/,"")  + "_" + @room_code, cache_key)
+      pp "Roster cached: #{@horse_team} #{@room_code}"
+      return REDIS.hget(@horse_team.gsub(/\s/,"")  + "_" + @room_code, cache_key)
+    else
+      roster = model.send(cache_key.to_sym)
+      if @room_code
+        REDIS.hset(@horse_team.gsub(/\s/,"") + "_" + @room_code, cache_key, JSON.dump(roster))
+        REDIS.expire(@horse_team.gsub(/\s/,"") + "_" + @room_code, 5 * 60 * 60)
+      end
+      return roster.to_json
+    end
+  end
+end
+
 get '/season_stats.json' do
   content_type :json
   horse_team = params[:horse_team] || "Pittsburgh Penguins"
   room_code = params[:room_code]
-  
-  if room_code && REDIS.hexists(horse_team.gsub(/\s/,"")  + "_" + room_code, "season_total")
-    pp "Roster cached: #{horse_team} #{room_code}"
-    return REDIS.hget(horse_team.gsub(/\s/,"")  + "_" + room_code, "season_total")
-  else
-    roster = Scores.new(horse_team).season_goals
-    if room_code
-      REDIS.hset(horse_team.gsub(/\s/,"") + "_" + room_code, "season_total", JSON.dump(roster))
-      REDIS.expire(horse_team.gsub(/\s/,"") + "_" + room_code, 5 * 60 * 60)
-    end
-    return roster.to_json
-  end
+
+  wrapper = CacheWrapper.new(horse_team, room_code)
+  season_stats = JSON.parse(wrapper.get_cached(Scores.new(horse_team), "season_goals"))
+  active_roster = JSON.parse(wrapper.get_cached(ActiveRoster.new(horse_team), "active_roster"))
+  season_stats.select { |player| active_roster[player["location"]].include?(player["name"]) }.to_json
 end
 
 get '/scores.json' do
   content_type :json
   horse_team = params[:horse_team] || "Pittsburgh Penguins"
   room_code = params[:room_code]
-  if room_code && REDIS.hexists("scores_" + horse_team.gsub(/\s/,"") + "_" + room_code, "scores")
-    pp "Scores cached #{room_code}"
-    return REDIS.hget("scores_" + horse_team.gsub(/\s/,"") + "_" + room_code, "scores")
-  else
-    scores = Scores.new(horse_team).goals
-    if room_code
-      REDIS.hset("scores_" + horse_team.gsub(/\s/,"") + "_" + room_code, "scores", JSON.dump(scores))
-      REDIS.expire("scores_" + horse_team .gsub(/\s/,"")+ "_" + room_code, 8)
-    end
-    return scores.to_json
-  end
-end
-
-get '/players.json' do
-  content_type :json
-  horse_team = params[:horse_team] || "Pittsburgh Penguins"
-  room_code = params[:room_code]
-  
-  if room_code && REDIS.hexists(horse_team.gsub(/\s/,"")  + "_" + room_code, "active_roster")
-    pp "Roster cached: #{horse_team} #{room_code}"
-    return REDIS.hget(horse_team.gsub(/\s/,"")  + "_" + room_code, "active_roster")
-  else
-    roster = ActiveRoster.new(horse_team).scrape
-    if room_code
-      REDIS.hset(horse_team.gsub(/\s/,"") + "_" + room_code, "active_roster", JSON.dump(roster))
-      REDIS.expire(horse_team.gsub(/\s/,"") + "_" + room_code, 5 * 60 * 60)
-    end
-    return roster.to_json
-  end
+  wrapper = CacheWrapper.new(horse_team, room_code)
+  wrapper.get_cached(Scores.new(horse_team), "goals")
 end
 
 get '/random.json' do

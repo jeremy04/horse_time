@@ -9,7 +9,7 @@ class ActiveRoster
     @horse_team = horse_team
   end
 
-  def scrape
+  def active_roster
     agent = Mechanize.new{|a| a.ssl_version, a.verify_mode = :TLSv1_2, OpenSSL::SSL::VERIFY_NONE}
     page = agent.get("http://www.nicetimeonice.com/api/seasons/20152016/games/")
     json = JSON.parse(page.content)
@@ -21,7 +21,7 @@ class ActiveRoster
       puts "Getting team ids: https://statsapi.web.nhl.com/api/v1/game/#{latest_game["gameID"]}/feed/live?site=en_nhl"
       page = agent.get("https://statsapi.web.nhl.com/api/v1/game/#{latest_game["gameID"]}/feed/live?site=en_nhl")
     rescue Mechanize::ResponseCodeError => e
-      return {:horse_team => [], :other => [] }
+      return {:horse_team => [], :other_team => [] }
     end
 
     jsonData = JSON.parse(page.body)
@@ -38,7 +38,7 @@ class ActiveRoster
         puts "Getting roster https://statsapi.web.nhl.com/api/v1/teams?site=en_nhl&teamId=#{home_team_id},#{away_team_id}&expand=team.roster,roster.person,person.stats&stats=statsSingleSeason"
         page = agent.get("https://statsapi.web.nhl.com/api/v1/teams?site=en_nhl&teamId=#{home_team_id},#{away_team_id}&expand=team.roster,roster.person,person.stats&stats=statsSingleSeason")
       rescue Mechanize::ResponseCodeError => e
-        return {:horse_team => [], :other => [] }
+        return {:horse_team => [], :other_team => [] }
       end
 
       jsonData = JSON.parse(page.body)
@@ -60,9 +60,9 @@ class ActiveRoster
     other_lines = s2.scrape_players[:players]
 
     if latest_game["homeTeam"] == @horse_team
-      return { :horse_team => home_skaters & horse_lines, :other => away_skaters & other_lines }
+      return { :horse_team => home_skaters & horse_lines, :other_team => away_skaters & other_lines }
     else
-      return { :horse_team => away_skaters & other_lines, :other => home_skaters & horse_lines  }
+      return { :horse_team => away_skaters & other_lines, :other_team => home_skaters & horse_lines  }
     end
 
   end

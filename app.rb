@@ -79,8 +79,7 @@ get '/auto_pick.json' do
   horses = players.select { |h| h['name'] == params[:name] }.first["horses"]
   horses_picked = players.map { |x| x["horses"].values.flatten }.flatten
 
-
-  teams_left = horses.keys.select { |k| horses[k].size <= 2 }
+  teams_left = horses.keys.select { |k| horses[k].size < 2 }
   roster = Scores.new(params[:game_team]).season_goals
 
   roster = roster.reject { |h| horses_picked.include?(h["name"]) }

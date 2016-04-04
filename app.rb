@@ -293,9 +293,12 @@ post '/generate_room_code.json' do
 end
 
 class CacheWrapper
+  attr_accessor :ttl
+  
   def initialize(horse_team, room_code)
     @horse_team = horse_team
     @room_code = room_code
+    @ttl = 5.hour.to_i
   end
 
   def get_cached(model, cache_key)
@@ -306,7 +309,7 @@ class CacheWrapper
       roster = model.send(cache_key.to_sym)
       if @room_code
         REDIS.hset(@horse_team.gsub(/\s/,"") + "_" + @room_code, cache_key, JSON.dump(roster))
-        REDIS.expire(@horse_team.gsub(/\s/,"") + "_" + @room_code, 5 * 60 * 60)
+        REDIS.expire(@horse_team.gsub(/\s/,"") + "_" + @room_code, @ttl)
       end
       return roster.to_json
     end
@@ -329,6 +332,7 @@ get '/scores.json' do
   horse_team = params[:horse_team] || "Pittsburgh Penguins"
   room_code = params[:room_code]
   wrapper = CacheWrapper.new(horse_team, room_code)
+  wrapper.ttl = 8.seconds.to_i
   wrapper.get_cached(Scores.new(horse_team), "goals")
 end
 

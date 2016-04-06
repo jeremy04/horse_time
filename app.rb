@@ -302,15 +302,15 @@ class CacheWrapper
   end
 
   def get_cached(model, cache_key)
-    if @room_code && REDIS.hexists(@horse_team.gsub(/\s/,"")  + "_" + @room_code, cache_key)
-      pp "Roster cached: #{@horse_team} #{@room_code}"
-      return REDIS.hget(@horse_team.gsub(/\s/,"")  + "_" + @room_code, cache_key)
+    if @room_code && REDIS.hexists(cache_key + "_" + @horse_team.gsub(/\s/,"")  + "_" + @room_code, cache_key)
+      pp "Roster cached: ##{cache_key} #{@horse_team} #{@room_code}"
+      return REDIS.hget(cache_key + "_" + @horse_team.gsub(/\s/,"")  + "_" + @room_code, cache_key)
     else
-      pp "HIT!!"
+      pp "Hitting"
       roster = model.send(cache_key.to_sym)
       if @room_code
-        REDIS.hset(@horse_team.gsub(/\s/,"") + "_" + @room_code, cache_key, JSON.dump(roster))
-        REDIS.expire(@horse_team.gsub(/\s/,"") + "_" + @room_code, @ttl)
+        REDIS.hset(cache_key + "_" + @horse_team.gsub(/\s/,"") + "_" + @room_code, cache_key, JSON.dump(roster))
+        REDIS.expire(cache_key + "_" + @horse_team.gsub(/\s/,"") + "_" + @room_code, @ttl)
       end
       return roster.to_json
     end

@@ -306,7 +306,7 @@ class CacheWrapper
       pp "Roster cached: ##{cache_key} #{@horse_team} #{@room_code}"
       return REDIS.hget(cache_key + "_" + @horse_team.gsub(/\s/,"")  + "_" + @room_code, cache_key)
     else
-      pp "Hitting"
+      pp "Hitting #{cache_key}"
       roster = model.send(cache_key.to_sym)
       if @room_code
         REDIS.hset(cache_key + "_" + @horse_team.gsub(/\s/,"") + "_" + @room_code, cache_key, JSON.dump(roster))

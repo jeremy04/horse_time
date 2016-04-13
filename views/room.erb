@@ -1,5 +1,6 @@
 <script>
   var eligibleHorses;
+  var timer;
   var draftOrder;
   var pickCount = <%= @pick_count %>;
   var spareHorses = [];
@@ -13,6 +14,36 @@
   <% if @draft_over %>
     setTimeout("location.reload(true);", 30000);
   <% end %>
+
+
+  function countdown( elementName, minutes, seconds )
+  {
+      var element, endTime, hours, mins, msLeft, time;
+
+      function twoDigits( n )
+      {
+          return (n <= 9 ? "0" + n : n);
+      }
+
+      function updateTimer()
+      {
+          msLeft = endTime - (+new Date);
+          if ( msLeft < 1000 ) {
+              element.innerHTML = "countdown's over!";
+          } else {
+              time = new Date( msLeft );
+              hours = time.getUTCHours();
+              mins = time.getUTCMinutes();
+              element.innerHTML = (hours ? hours + ':' + twoDigits( mins ) : mins) + ':' + twoDigits( time.getUTCSeconds() );
+              timer = setTimeout( updateTimer, time.getUTCMilliseconds() + 500 );
+          }
+      }
+
+      element = document.getElementById( elementName );
+      endTime = (+new Date) + 1000 * (60*minutes + seconds) + 500;
+      updateTimer();
+  }
+
 
   function getCookieValue(a, b) {
     b = document.cookie.match('(^|;)\\s*' + a + '\\s*=\\s*([^;]+)');
@@ -153,6 +184,9 @@
           $("#navbar").remove();
           setTimeout("location.reload(true);", 30000);
         }
+
+        clearTimeout(timer);
+        countdown( "countdown", 4, 0 );
 
 
       });
@@ -318,6 +352,25 @@
 
         displayRoster(eligibleHorses, data);
         displayGoals();
+        timer = countdown( "countdown", 4, 0 );
+
+    });
+
+    $("#auto_draft_btn").on("click", function(event){
+      event.preventDefault();
+
+      $(this).prop("disabled",true);
+
+      $.get('/auto_pick.json', {       game_team: "<%= @horse_team %>", 
+                                       name: $("#autodraft").val(),
+                                       room_code: "<%= @room_code %>" 
+                                     }, 
+        function(returnedData){
+          console.log("WOOO");
+
+          $(this).prop("disabled",false);
+        });
+
 
     });
 
@@ -354,11 +407,9 @@
 <div class="col-md-4">
   <h2>AutoDraft</h2>
   <div>
-    <form class="navbar-form navbar-right" method="get" action="/auto_pick.json" role="form">
-    <input type="hidden" name="game_team" value="<%= @horse_team %>">
-    <input type="hidden" name="room_code" value="<%= @room_code %>">
+    <div id="countdown"></div>
     <input type='hidden' name="name" id='autodraft'>
-    <button type="submit" class="btn btn-primary btn-lg" role="button">Autodraft</a>
+    <a class="btn btn-default" id="auto_draft_btn" role="button">Autodraft</a>
 
   </div>
 </div>

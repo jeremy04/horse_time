@@ -2,6 +2,7 @@ require 'rubygems'
 require 'sinatra'
 require './lib/scores'
 require './lib/active_roster'
+require './lib/auto_pick_time'
 require './lib/available_games'
 require './lib/pick_order'
 require "./lib/rng.rb"
@@ -70,7 +71,6 @@ post '/generate_draft.json' do
   ["Generated"].to_json
 end
 
-
 get '/auto_pick.json' do 
   content_type :json
   redis_players = REDIS.hget(params[:room_code], "players")
@@ -79,20 +79,8 @@ get '/auto_pick.json' do
   horses = players.select { |h| h['name'] == params[:name] }.first["horses"]
   horses_picked = players.map { |x| x["horses"].values.flatten }.flatten
 
-  teams_left = horses.keys.select { |k| horses[k].size < 2 }
-  roster = Scores.new(params[:game_team]).season_goals
-
-  roster = roster.reject { |h| horses_picked.include?(h["name"]) }
-
-  if teams_left.size > 1
-    top_player = roster.sort_by { |x| x["points"] }.last
-    selection = top_player["name"]
-    horses[top_player["location"]] << selection
-  else
-    top_player = roster.select { |s| s["location"] == teams_left.first }.sort_by { |x| x["points"] }.last
-    selection = top_player["name"]
-    horses[teams_left.first] << selection 
-  end
+  auto_pick_time = AutoPickTime.new
+  horses = auto_pick_time.call(horses, horses_picked, params)
 
   players.each do |player|
     if player["name"] == params[:name]
@@ -114,7 +102,7 @@ get '/auto_pick.json' do
     PUBNUB.publish({
       "channel" => "horse_selected",
       "message" => { "player" => params[:name],
-                     "horse" => selection
+                     "horse" => auto_pick_time.selection
                    },
       "callback" => lambda do |message| puts message end
     })

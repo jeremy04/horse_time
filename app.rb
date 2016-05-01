@@ -1,64 +1,62 @@
-require 'rubygems'
-require 'sinatra'
-require './lib/scores'
-require './lib/active_roster'
-require './lib/auto_pick_time'
-require './lib/available_games'
-require './lib/pick_order'
+require "rubygems"
+require "sinatra"
+require "./lib/cache_wrapper"
+require "./lib/scores"
+require "./lib/active_roster"
+require "./lib/auto_pick_time"
+require "./lib/available_games"
+require "./lib/pick_order"
 require "./lib/rng.rb"
-require './lib/players_validator'
-require 'json'
-require 'sinatra/contrib/all'
-require 'active_support/all'
-require 'pp'
-require './cat_facts'
-require 'logger'
-require 'active_support/core_ext/hash/indifferent_access'
-require 'uri'
-require 'net/http'
-require 'pubnub'
+require "./lib/players_validator"
+require "json"
+require "sinatra/contrib/all"
+require "active_support/all"
+require "pp"
+require "./cat_facts"
+require "logger"
+require "active_support/core_ext/hash/indifferent_access"
+require "uri"
+require "net/http"
+require "pubnub"
+
 
 enable :logging
-set :protection, :except => [:json_csrf]
-set :bind, '0.0.0.0'
+set :protection, except: [:json_csrf]
+set :bind, "0.0.0.0"
 
 configure do
-  require 'uri'
-  require 'redis'
+  require "uri"
+  require "redis"
   uri = URI.parse(ENV["REDISCLOUD_URL"] || "http://127.0.0.1:6379")
-  REDIS = Redis.new(:host => uri.host, :port => uri.port, :password => uri.password)
-  puts "Pub nub starting" 
+  REDIS = Redis.new(host: uri.host, port: uri.port, password: uri.password)
+  puts "Pub nub starting"
   PUBNUB = Pubnub.new(
     ENV["PUBNUB_PUBKEY"],
     ENV["PUBNUB_SUBKEY"],
-    '', #secret key
-    '',
+    "", # secret key
+    "",
     false
   )
-
 end
 
 class RoomCodeValidator
-
   def self.room_has_players?(room_code)
     REDIS.hget(room_code, "players") && REDIS.hget(room_code, "ready") == "false"
   end
 
   def self.cookies_match_redis(cookie)
-    cookie = cookie || {}.to_json
+    cookie ||= {}.to_json
     room_code = JSON.parse(cookie)["room_code"]
-    name      = JSON.parse(cookie)["name"]
     cookie && REDIS.hexists(room_code, "players")
   end
-
 end
 
-def generate_activation_code(size = 4)
-  charset = %w{ 2 3 4 6 7 9 A C D E F G H J K M N P Q R T V W X Y Z}
-  (0...size).map{ charset.to_a[SecureRandom.random_number(charset.size)] }.join
+def generate_activation_code(size=4)
+  charset = %w( 2 3 4 6 7 9 A C D E F G H J K M N P Q R T V W X Y Z )
+  (0...size).map { charset.to_a[SecureRandom.random_number(charset.size)] }.join
 end
 
-post '/generate_draft.json' do
+post "/generate_draft.json" do
   content_type :json
   horse_team = params[:horse_team]
   horses_per = params[:horses_per]
@@ -66,17 +64,17 @@ post '/generate_draft.json' do
   REDIS.hset(params[:room_code], "horses_per", horses_per.to_i)
   REDIS.hset(params[:room_code], "ready", "true")
   players = JSON.parse(REDIS.hget(params[:room_code], "players")).shuffle(random: SecureRandom::RNG)
-  REDIS.hset(params[:room_code], "pickCount", 1);
+  REDIS.hset(params[:room_code], "pickCount", 1)
   REDIS.hset(params[:room_code], "players", JSON.dump(players))
   ["Generated"].to_json
 end
 
-get '/auto_pick.json' do 
+get "/auto_pick.json" do
   content_type :json
-  redis_players = REDIS.hget(params[:room_code], "players")
-  return { message: "There was an error", errors: ["All parties have left. Try logging out"]}.to_json if redis_players.nil?
-  players = JSON.parse(redis_players)
-  horses = players.select { |h| h['name'] == params[:name] }.first["horses"]
+  players = REDIS.hget(params[:room_code], "players")
+  return {message: "There was an error", errors: ["All parties have left. Try logging out"]}.to_json if players.nil?
+  players = JSON.parse(players)
+  horses = players.select { |h| h["name"] == params[:name] }.first["horses"]
   horses_picked = players.map { |x| x["horses"].values.flatten }.flatten
 
   auto_pick_time = AutoPickTime.new
@@ -84,8 +82,8 @@ get '/auto_pick.json' do
 
   players.each do |player|
     if player["name"] == params[:name]
-     player["horses"] = horses 
-   end
+      player["horses"] = horses
+    end
   end
 
   horses_per = REDIS.hget(params[:room_code], "horses_per").to_i
@@ -93,18 +91,16 @@ get '/auto_pick.json' do
   if PlayersValidator.new(players, horses_per).valid?
     REDIS.hset(params[:room_code], "players", JSON.dump(players))
     pickCount = REDIS.hget(params[:room_code], "pickCount").to_i
-    pickCount+=1
+    pickCount += 1
     REDIS.hset(params[:room_code], "pickCount", pickCount)
-    REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * (2 * horses_per ))
-    
-    #REDIS.lpop("#{params[:room_code]}_autopick") 
-    
+    REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * (2 * horses_per))
+
     PUBNUB.publish({
       "channel" => "horse_selected",
       "message" => { "player" => params[:name],
                      "horse" => auto_pick_time.selection
-                   },
-      "callback" => lambda do |message| puts message end
+    },
+    "callback" => lambda do |message| puts message end
     })
 
     { message: "Updated sucessfully" , errors: []}.to_json
@@ -114,20 +110,19 @@ get '/auto_pick.json' do
 end
 
 
-post '/update_pick.json' do 
+post "/update_pick.json" do
   content_type :json
-  redis_players = REDIS.hget(params[:room_code], "players")
-  return { message: "There was an error", errors: ["All parties have left. Try logging out"]}.to_json if redis_players.nil?
-  players = JSON.parse(redis_players)
-  horses = players.select { |h| h['name'] == params[:name] }.first["horses"]
+  players = REDIS.hget(params[:room_code], "players")
+  return { message: "There was an error", errors: ["All parties have left. Try logging out"]}.to_json if players.nil?
+  players = JSON.parse(players)
+  horses = players.select { |h| h["name"] == params[:name] }.first["horses"]
   horses["horse_team"] << params[:horse_team] if params[:horse_team]
   horses["other_team"] << params[:other_team] if params[:other_team]
   players.each do |player|
     if player["name"] == params[:name]
-     player["horses"] = horses 
-   end
+      player["horses"] = horses 
+    end
   end
-
 
   horses_per = REDIS.hget(params[:room_code], "horses_per").to_i
   if PlayersValidator.new(players, horses_per).valid?
@@ -137,36 +132,34 @@ post '/update_pick.json' do
 
     REDIS.hset(params[:room_code], "players", JSON.dump(players))
     pickCount = REDIS.hget(params[:room_code], "pickCount").to_i
-    pickCount+=1
+    pickCount += 1
     REDIS.hset(params[:room_code], "pickCount", pickCount)
-    REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * (2 * horses_per )) 
-    { message: "Updated sucessfully" , errors: []}.to_json
+    REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * (2 * horses_per)) 
+    {message: "Updated sucessfully" , errors: []}.to_json
   else
-    { message: "There was an error", errors: ["Cant pick the same guy twice bro"]}.to_json
+    {message: "There was an error", errors: ["Cant pick the same guy twice bro"]}.to_json
   end
 end
 
 
-get '/get_players.json' do
+get "/get_players.json" do
   content_type :json
   players = JSON.parse(REDIS.hget(params[:room_code], "players"))
   count = REDIS.hget(params[:room_code], "pickCount").to_i
-  {"players"=> players, "pickCount" => count }.to_json
+  {"players" => players, "pickCount" => count}.to_json
 end
 
-post '/login' do
+post "/login" do
   params[:room_code] = params[:room_code].upcase
   if params[:name].present? && params[:room_code].present? && RoomCodeValidator.room_has_players?(params[:room_code])
     players = JSON.parse(REDIS.hget(params[:room_code], "players"))
     players = players.map { |p| p.with_indifferent_access }
-    params[:name] = params[:name].gsub(/\s/,"")
-    players <<  { name: params[:name], status: 'new',
-                  horses: { horse_team: [], other_team: [] }
-                }
+    params[:name] = params[:name].gsub(/\s/, "")
+    players << {name: params[:name], status: "new", horses: {horse_team: [], other_team: []}}
     if players.size == 1
       REDIS.hset(params[:room_code], "room_manager", params[:name])
     end
-    
+
     return "Someone with that name is already logged in" if players.uniq { |p| p[:name] }.size != players.size
     players = players.uniq { |p| p[:name] }
 
@@ -176,21 +169,21 @@ post '/login' do
   else
     return "Fail Whale: La sala no existe o juego ha comenzado. Lo siento, amigo."
   end
-  redirect to('/')
+  redirect to("/")
 end
 
 post "/logout" do
   name = JSON.parse(cookies[:horsetime])["name"]
   room_code = JSON.parse(cookies[:horsetime])["room_code"]
-  redis_players = REDIS.hget(room_code, "players")
+  players = REDIS.hget(room_code, "players")
 
   # Manager left 
-  if redis_players.nil?
+  if players.nil?
     response.delete_cookie "horsetime"
     redirect "/"
   end
 
-  players = JSON.parse(redis_players)
+  players = JSON.parse(players)
 
   players = players.map do |player|
     player["status"] = "inactive" if player["name"] == name
@@ -198,7 +191,7 @@ post "/logout" do
   end
 
   REDIS.hset(room_code, "players", JSON.dump(players))
-  
+
   if name == REDIS.hget(room_code, "room_manager")
     REDIS.del room_code
   end
@@ -214,12 +207,13 @@ get %r{/room/([A-Z0-9]{4})} do
     @manager = REDIS.hget(@room_code, "room_manager")
     @user = JSON.parse(cookies[:horsetime])["name"]
     players = REDIS.hget(@room_code, "players")
-    @players = JSON.parse(players).select { |p| p["status"] != 'inactive' }.map { |p| p["name"] }
+    @players = JSON.parse(players).select { |p| p["status"] != "inactive" }.map { |p| p["name"] }
     @teams = AvailableGames.games
     if REDIS.hget(@room_code, "ready") == "false"
       erb :lobby
     elsif REDIS.hget(@room_code, "ready") == "true" || REDIS.hget(@room_code, "ready") == "over"
       @draft_over = REDIS.hget(@room_code, "ready") == "over"
+
       @pick_count = REDIS.hget(@room_code, "pickCount")
       @horses_per = REDIS.hget(@room_code, "horses_per").to_i
       rounds = @horses_per * 2
@@ -229,7 +223,7 @@ get %r{/room/([A-Z0-9]{4})} do
       # auto_pick = AutoPick.new(REDIS)
       # auto_pick.create_scheduled_jobs(@room_code, @pick_order)
 
-      @roster = JSON.parse(players).select { |p| p["status"] != 'inactive' }.map { |acc, h| { acc["name"] => acc["horses"] } }.reduce(:merge)
+      @roster = JSON.parse(players).select { |p| p["status"] != "inactive" }.map { |acc, h| { acc["name"] => acc["horses"] } }.reduce(:merge)
       team_playing =  @teams.select { |team| team.first == REDIS.hget(@room_code, "horse_team") }.first
       if team_playing
         @horse_team = team_playing.first
@@ -258,11 +252,11 @@ get "/login" do
   end
 end
 
-get '/exception' do
+get "/exception" do
   raise Exception, "Hi Rollbar"
 end
 
-get '/' do
+get "/" do
   if cookies[:horsetime]
     room_code = JSON.parse(cookies[:horsetime])["room_code"]
     redirect "/room/#{room_code}"
@@ -271,7 +265,7 @@ get '/' do
   end
 end
 
-post '/generate_room_code.json' do
+post "/generate_room_code.json" do
   content_type :json
   activation_code = generate_activation_code
   REDIS.hset(activation_code, "players", JSON.dump([]))
@@ -280,32 +274,7 @@ post '/generate_room_code.json' do
   {:room_code => activation_code}.to_json
 end
 
-class CacheWrapper
-  attr_accessor :ttl
-  
-  def initialize(horse_team, room_code)
-    @horse_team = horse_team
-    @room_code = room_code
-    @ttl = 5.hour.to_i
-  end
-
-  def get_cached(model, cache_key)
-    if @room_code && REDIS.hexists(cache_key + "_" + @horse_team.gsub(/\s/,"")  + "_" + @room_code, cache_key)
-      pp "Roster cached: ##{cache_key} #{@horse_team} #{@room_code}"
-      return REDIS.hget(cache_key + "_" + @horse_team.gsub(/\s/,"")  + "_" + @room_code, cache_key)
-    else
-      pp "Hitting #{cache_key}"
-      roster = model.send(cache_key.to_sym)
-      if @room_code
-        REDIS.hset(cache_key + "_" + @horse_team.gsub(/\s/,"") + "_" + @room_code, cache_key, JSON.dump(roster))
-        REDIS.expire(cache_key + "_" + @horse_team.gsub(/\s/,"") + "_" + @room_code, @ttl)
-      end
-      return roster.to_json
-    end
-  end
-end
-
-get '/season_stats.json' do
+get "/season_stats.json" do
   content_type :json
   horse_team = params[:horse_team] || "Pittsburgh Penguins"
   room_code = params[:room_code]
@@ -316,7 +285,7 @@ get '/season_stats.json' do
   season_stats.select { |player| active_roster[player["location"]].include?(player["name"]) }.to_json
 end
 
-get '/scores.json' do
+get "/scores.json" do
   content_type :json
   horse_team = params[:horse_team] || "Pittsburgh Penguins"
   room_code = params[:room_code]
@@ -325,22 +294,22 @@ get '/scores.json' do
   wrapper.get_cached(Scores.new(horse_team), "goals")
 end
 
-get '/random.json' do
+get "/random.json" do
   content_type :json
   agent = Mechanize.new
   page = agent.get("http://www.randomserver.dyndns.org/client/random.php?type=LIN&a=0&b=1&n=1")
-  pre = page.at '//pre'
+  pre = page.at "//pre"
   {:random => pre.children.first.text.split("\r\n\r\n").last.strip.to_f }.to_json
 end
 
-get '/cat_fact' do
+get "/cat_fact" do
   "#{CatFacts.new.random_fact}"
 end
 
-get '/ATriggerVerify.txt' do
-  send_file 'ATriggerVerify.txt'
+get "/ATriggerVerify.txt" do
+  send_file "ATriggerVerify.txt"
 end
 
-get '/flux' do
-  send_file 'flux.html'
+get "/flux" do
+  send_file "flux.html"
 end

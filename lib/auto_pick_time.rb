@@ -5,8 +5,12 @@ class AutoPickTime
 
   def call(horses, picked_horses, params)
     teams_left = horses.keys.select { |k| horses[k].size < 2 }
-    roster = Scores.new(params[:game_team]).season_goals    
-    roster = roster.reject { |h| picked_horses.include?(h["name"]) }
+    
+    wrapper = CacheWrapper.new(params[:game_team], params[:room_code])
+    season_stats = JSON.parse(wrapper.get_cached(Scores.new(params[:game_team]), "season_goals"))
+    active_roster = JSON.parse(wrapper.get_cached(ActiveRoster.new(params[:game_team]), "active_roster"))
+    season_stats.select { |player| active_roster[player["location"]].include?(player["name"]) }   
+    roster = season_stats.reject { |h| picked_horses.include?(h["name"]) }
     if teams_left.size > 1
       top_player = roster.sort_by { |x| x["points"] }.last
       @selection = top_player["name"]

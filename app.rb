@@ -144,7 +144,8 @@ end
 
 get "/get_players.json" do
   content_type :json
-  players = JSON.parse(REDIS.hget(params[:room_code], "players"))
+  players = REDIS.hget(params[:room_code], "players") || [].to_s
+  players = JSON.parse(players)
   count = REDIS.hget(params[:room_code], "pickCount").to_i
   {"players" => players, "pickCount" => count}.to_json
 end

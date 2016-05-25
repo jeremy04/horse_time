@@ -213,7 +213,6 @@ get %r{/room/([A-Z0-9]{4})} do
     if REDIS.hget(@room_code, "ready") == "false"
       erb :lobby
     elsif REDIS.hget(@room_code, "ready") == "true" || REDIS.hget(@room_code, "ready") == "over"
-      @draft_over = REDIS.hget(@room_code, "ready") == "over"
 
       @pick_count = REDIS.hget(@room_code, "pickCount")
       @horses_per = REDIS.hget(@room_code, "horses_per").to_i
@@ -271,7 +270,7 @@ post "/generate_room_code.json" do
   activation_code = generate_activation_code
   REDIS.hset(activation_code, "players", JSON.dump([]))
   REDIS.hset(activation_code, "ready", false)
-  REDIS.expire(activation_code, 5 * 60 * 60)
+  REDIS.expire(activation_code, 10.hour.to_i)
   {:room_code => activation_code}.to_json
 end
 

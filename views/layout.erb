@@ -34,6 +34,18 @@
         <script src="/js/vendor/jquery-1.11.2.min.js"></script>
         <script src="/js/vendor/underscore.string.min.js"></script>
         <script src="/js/vendor/jquery.autocomplete.min.js"></script>
+        <script>
+        $( document ).ready(function() {
+
+            $( "#leave_lobby" ).click(function(event) {
+                event.preventDefault();
+                var are_you_sure = confirm("Warning!!! You are leaving the game! >:). Are you super duper sure???");
+                if (are_you_sure == true) {
+                    $( "#form_logout" ).submit();
+                }
+            });
+        });
+        </script>
 
     </head>
     <body>
@@ -51,11 +63,11 @@
           </button>
           <a class="navbar-brand" href="#">HORSE TIME</a>
         </div>
-        <% if @user && !@draft_over %>
+        <% if @user %>
             <div id="navbar" class="navbar-collapse collapse">
-              <form class="navbar-form navbar-right" method="post" action="/logout" role="form">
+              <form class="navbar-form navbar-right" id="form_logout" method="post" action="/logout" role="form">
                 <div class="form-group">
-                  <button type="submit" class="btn btn-primary btn-lg" role="button">Leave Lobby</a>
+                  <button type="submit" id="leave_lobby" class="btn btn-primary btn-lg" role="button">Leave Lobby</a>
                 </div>
                 <div class="form-group">
                   

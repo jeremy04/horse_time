@@ -41,7 +41,7 @@ class AutoPick
         http.verify_mode = OpenSSL::SSL::VERIFY_NONE
         page = http.get(uri.request_uri)
       end
-      REDIS.expire(auto_pick_key, 5 * 60 * 60)
+      REDIS.expire(auto_pick_key, 10.hour.to_i)
     end
   end
 

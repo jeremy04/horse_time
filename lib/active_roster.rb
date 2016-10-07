@@ -5,17 +5,16 @@ require './lib/team_identify'
 require './lib/team_scrapper'
 
 class ActiveRoster
-  def initialize(horse_team)
+  def initialize(horse_team, date=Time.now)
     @horse_team = horse_team
+    @date = date
   end
 
   def active_roster
-    agent = Mechanize.new{|a| a.ssl_version, a.verify_mode = :TLSv1_2, OpenSSL::SSL::VERIFY_NONE}
-    page = agent.get("http://www.nicetimeonice.com/api/seasons/20152016/games/")
-    json = JSON.parse(page.content)
+    json = JSON.parse(File.read("schedule.json"))
     json = json.select { |x| x["awayTeam"] == @horse_team || x["homeTeam"] == @horse_team }
-    latest_game = horse_games(json).sort_by { |h| Date.parse(h["date"]) }.last
-
+    latest_game = horse_games(json).select { |h| Date.parse(h["date"]) == (@date.utc + Time.zone_offset("-10")).to_date }.first
+    
     begin
       agent = Mechanize.new{|a| a.ssl_version, a.verify_mode = :TLSv1_2, OpenSSL::SSL::VERIFY_NONE}
       puts "Getting team ids: https://statsapi.web.nhl.com/api/v1/game/#{latest_game["gameID"]}/feed/live?site=en_nhl"

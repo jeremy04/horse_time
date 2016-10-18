@@ -58,6 +58,12 @@ class ActiveRoster
     s2.visit_roster(other_link)
     other_lines = s2.scrape_players[:players]
 
+    home_skaters = home_skaters.map { |h| normalize(h) }
+    horse_lines = horse_lines.map { |h| normalize(h) }
+
+    away_skaters = away_skaters.map { |h| normalize(h) }
+    other_lines = other_lines.map { |h| normalize(h) }
+
     if latest_game["homeTeam"] == @horse_team
       return { :horse_team => home_skaters & horse_lines, :other_team => away_skaters & other_lines }
     else
@@ -67,6 +73,10 @@ class ActiveRoster
   end
 
   private
+
+  def normalize(name)
+    name.split.join(" ").downcase
+  end
 
   def horse_games(json)
     json.select { |x| x["awayTeam"] == @horse_team || x["homeTeam"] == @horse_team }

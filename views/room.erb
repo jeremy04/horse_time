@@ -59,13 +59,18 @@
     return _.difference(eligibleHorses.horse_team.concat(eligibleHorses.other_team), used);
   }
 
+  function toTitleCase(str)
+  {
+    return str.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+  }
+
   function top_points(players, goals)
   {
     players = _.difference(spareHorses, players);
     players =  _.map(players, function(player) {
       hash = {};
 
-      lookup_player = _.findWhere(goals, {"name": player });
+      lookup_player = _.findWhere(goals, {"name": player.toLowerCase() });
       if (lookup_player === undefined || lookup_player === null)
       {
         console.log("Problem with: " + player);
@@ -106,25 +111,27 @@
         _.each(data.goals, function(points, player){
           player = player.replace(/'/g, '');
           _.each(_.keys(roster), function(value) {
-            var fullRoster = roster[value]["horse_team"].concat(roster[value]["other_team"]); 
-            if(_.contains(fullRoster, player)) {
+            var fullRoster = roster[value]["horse_team"].concat(roster[value]["other_team"]);
+
+            if(_.contains(fullRoster, toTitleCase(player) )) {
               shotTotals[value] += (points);
             }
           });
 
-          $('p[data-horse="' + player + '"]').append(" G: " + points);
+          $('p[data-horse="' + toTitleCase(player) + '"]').append(" G: " + points);
         });
 
         _.each(data.assists, function(points, player) {
           player = player.replace(/'/g, '');
           _.each(_.keys(roster), function(value) {
-            var fullRoster = roster[value]["horse_team"].concat(roster[value]["other_team"]);    
-            if(_.contains(fullRoster, player)) {
+            var fullRoster = roster[value]["horse_team"].concat(roster[value]["other_team"]);
+
+            if(_.contains(fullRoster, toTitleCase(player)) ) {
               shotTotals[value] += (points / 2);
             }
           });
 
-          $('p[data-horse="' + player + '"]').append(" A: " + points);
+          $('p[data-horse="' + toTitleCase(player) + '"]').append(" A: " + points);
         });
 
         _.each(_.keys(roster), function(value) {
@@ -340,8 +347,9 @@
         eligibleHorses = _.map(data, function(obj) { return [obj.location, obj.name] });
         eligibleHorses = _.groupBy(eligibleHorses, function(obj) { return obj[0] });
         eligibleHorses = _.mapObject(eligibleHorses, function(value, key) { 
-          return _.map(value, function(p) { return p[1]; }) });
-        console.log
+          return _.map(value, function(p) { 
+            return toTitleCase(p[1])
+          }) });
 
         spareHorses = horsesLeft(roster, eligibleHorses);
 

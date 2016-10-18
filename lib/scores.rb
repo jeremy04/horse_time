@@ -46,7 +46,10 @@ class Scores
 
     home_skaters = home_skaters.map { |s| [ ["name", s["fullName"] ] , ["points", PlayerStats.new(s).points], ["team", home_team_name], ["location", "horse_team"] ].to_h }
     away_skaters = away_skaters.map { |s| [ ["name", s["fullName"] ] , ["points", PlayerStats.new(s).points], ["team", away_team_name], ["location", "other_team"] ].to_h }
-        
+
+    home_skaters = home_skaters.map { |x| x.merge('name' => normalize(x['name']) ) }
+    away_skaters = away_skaters.map { |x| x.merge('name' => normalize(x['name']) ) }
+
     points = home_skaters + away_skaters
     points
   end
@@ -81,7 +84,10 @@ class Scores
 
     goals   = home_goals.to_h.merge(away_goals.to_h)
     assists = home_assists.to_h.merge(away_assists.to_h)
-  
+
+    #goals = goals.map { |k,v| [normalize(k), v]}.to_h
+    #assists = assists.map { |k,v| [normalize(k), v]}.to_h
+
     foo = {:goals => goals, :assists => assists }
     foo
   end
@@ -90,6 +96,10 @@ class Scores
 
   def horse_games(json)
     json.select { |x| x["awayTeam"] == @horse_team || x["homeTeam"] == @horse_team }
+  end
+
+  def normalize(name)
+    name.split.join(" ").downcase
   end
 
 end

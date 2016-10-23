@@ -74,9 +74,9 @@ get "/auto_pick.json" do
   players = REDIS.hget(params[:room_code], "players")
   return {message: "There was an error", errors: ["All parties have left. Try logging out"]}.to_json if players.nil?
   players = JSON.parse(players)
+
   horses = players.select { |h| h["name"] == params[:name] }.first["horses"]
   horses_picked = players.map { |x| x["horses"].values.flatten }.flatten
-
   auto_pick_time = AutoPickTime.new
   horses = auto_pick_time.call(horses, horses_picked, params)
 
@@ -98,7 +98,7 @@ get "/auto_pick.json" do
     PUBNUB.publish({
       "channel" => "horse_selected",
       "message" => { "player" => params[:name],
-                     "horse" => auto_pick_time.selection
+                     "horse" => auto_pick_time.selection.split.map(&:capitalize).join(' ')
     },
     "callback" => lambda do |message| puts message end
     })

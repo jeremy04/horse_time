@@ -73,7 +73,7 @@ class Scores
     jsonData =  JSON.parse(page.body)
     home_skaters = jsonData["liveData"]["boxscore"]["teams"]["home"]["players"].map { |p| p[1] }
     away_skaters = jsonData["liveData"]["boxscore"]["teams"]["away"]["players"].map { |p| p[1] }
-    
+
     home_skaters = home_skaters.select { |s|    s["stats"].present? && s["stats"]["skaterStats"].present? }
     home_goals   = home_skaters.map    { |s| [s["person"]["fullName"], s["stats"]["skaterStats"]["goals"]]}
     home_assists = home_skaters.map    { |s| [s["person"]["fullName"], s["stats"]["skaterStats"]["assists"]]}
@@ -82,12 +82,10 @@ class Scores
     away_goals   = away_skaters.map    { |s| [s["person"]["fullName"], s["stats"]["skaterStats"]["goals"]]}
     away_assists = away_skaters.map    { |s| [s["person"]["fullName"], s["stats"]["skaterStats"]["assists"]]}  
 
+
     goals   = home_goals.to_h.merge(away_goals.to_h)
     assists = home_assists.to_h.merge(away_assists.to_h)
-
-    #goals = goals.map { |k,v| [normalize(k), v]}.to_h
-    #assists = assists.map { |k,v| [normalize(k), v]}.to_h
-
+  
     foo = {:goals => goals, :assists => assists }
     foo
   end

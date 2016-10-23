@@ -18,6 +18,7 @@ require "active_support/core_ext/hash/indifferent_access"
 require "uri"
 require "net/http"
 require "pubnub"
+require 'byebug'
 
 enable :logging
 set :protection, except: [:json_csrf]
@@ -92,11 +93,13 @@ get "/auto_pick.json" do
     pickCount = REDIS.hget(params[:room_code], "pickCount").to_i
     pickCount += 1
     REDIS.hset(params[:room_code], "pickCount", pickCount)
+    byebug
     REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * (2 * horses_per))
 
     PUBNUB.publish({
       "channel" => "horse_selected",
       "message" => { "player" => params[:name],
+                     "over" => (pickCount > (players.size * (2 * horses_per))),
                      "horse" => auto_pick_time.selection.split.map(&:capitalize).join(' ')
     },
     "callback" => lambda do |message| puts message end
@@ -227,9 +230,10 @@ get %r{/room/([A-Z0-9]{4})} do
     players = REDIS.hget(@room_code, "players")
     @players = JSON.parse(players).select { |p| p["status"] != "inactive" }.map { |p| p["name"] }
     @teams = AvailableGames.games
+    @game_over = REDIS.hget(@room_code, "ready") == "over"
     if REDIS.hget(@room_code, "ready") == "false"
       erb :lobby
-    elsif REDIS.hget(@room_code, "ready") == "true" || REDIS.hget(@room_code, "ready") == "over"
+    elsif REDIS.hget(@room_code, "ready") == "true" || @game_over
 
       @pick_count = REDIS.hget(@room_code, "pickCount")
       @horses_per = REDIS.hget(@room_code, "horses_per").to_i

@@ -11,7 +11,7 @@
   var shotTotals = {};
 
 
-  <% if @draft_over %>
+  <% if @game_over %>
     setTimeout("location.reload(true);", 30000);
   <% end %>
 
@@ -143,6 +143,9 @@
 
   function updateRound(message)
   {
+    if (message.over) {
+      $("#autodraft-div").css("display", "none");
+    }
     console.log(message.player +" picked " + message.horse);
     $("#horses_selected #" + message.player + "_horses").append("<p class='indent'>" + message.horse + "</p>");
 
@@ -411,8 +414,8 @@
     </div>
   </div>
 </div>
-<% if @manager == @user %>
-<div class="col-md-4">
+<% if @manager == @user && (!@game_over) %>
+<div class="col-md-4" id='autodraft-div'>
   <h2>AutoDraft</h2>
   <div>
     <div id="countdown"></div>

@@ -93,7 +93,7 @@ get "/auto_pick.json" do
     pickCount = REDIS.hget(params[:room_code], "pickCount").to_i
     pickCount += 1
     REDIS.hset(params[:room_code], "pickCount", pickCount)
-    byebug
+    
     REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * (2 * horses_per))
 
     PUBNUB.publish({

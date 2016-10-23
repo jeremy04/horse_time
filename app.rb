@@ -19,7 +19,6 @@ require "uri"
 require "net/http"
 require "pubnub"
 
-
 enable :logging
 set :protection, except: [:json_csrf]
 set :bind, "0.0.0.0"
@@ -135,6 +134,7 @@ post "/update_pick.json" do
     pickCount += 1
     REDIS.hset(params[:room_code], "pickCount", pickCount)
     REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * (2 * horses_per)) 
+    puts "#{params[:name]} picked #{params[:horse_team] || params[:other_team] }"
     {message: "Updated sucessfully" , errors: []}.to_json
   else
     {message: "There was an error", errors: ["Cant pick the same guy twice bro"]}.to_json
@@ -148,6 +148,23 @@ get "/get_players.json" do
   players = JSON.parse(players)
   count = REDIS.hget(params[:room_code], "pickCount").to_i
   {"players" => players, "pickCount" => count}.to_json
+end
+
+post '/ghost_player' do
+  
+  params[:room_code] = params[:room_code].upcase
+  if params[:name].present? && params[:room_code].present? && RoomCodeValidator.room_has_players?(params[:room_code])
+    players = JSON.parse(REDIS.hget(params[:room_code], "players"))
+    players = players.map { |p| p.with_indifferent_access }
+    params[:name] = params[:name].gsub(/\s/, "")
+    players << {name: params[:name], status: "new", horses: {horse_team: [], other_team: []}}
+    
+    return "error" if players.uniq { |p| p[:name] }.size != players.size
+    players = players.uniq { |p| p[:name] }
+
+    REDIS.hset(params[:room_code], "players", JSON.dump(players) )
+  end
+  params[:name]
 end
 
 post "/login" do

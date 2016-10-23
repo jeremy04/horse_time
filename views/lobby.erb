@@ -6,6 +6,25 @@ var pubnub = PUBNUB({
 
 $(document).ready(function() {
   
+  $("#ghost_player").on("click", function(){
+
+    $.post('/ghost_player', 
+          { room_code: "<%= @room_code %>",
+            name: $("input[name=ghost_player]").val()
+          }, 
+            function(returnedData){
+              if(returnedData != 'error') {
+
+                pubnub.publish({
+                  channel: 'signon',        
+                  message:  { user: returnedData },
+                  callback : function(m){}
+                });
+              }
+            });
+
+  });
+
   $("#start_game").on("click", function(event){
     event.preventDefault();
     
@@ -107,6 +126,14 @@ $(document).ready(function() {
   <div class="col-md-4">
     <p>
       <% if @teams.present? %>
+      <BR />
+      Add Ghost Player:
+      <div class="form-group">
+        <input type="text" name="ghost_player" placeholder="ENTER GHOST NAME" class="form-control">
+        <button type="submit" id="ghost_player" class="btn btn-success">ADD</button>
+      </div>
+      <BR />
+
       <form role="form">
         <div class="form-group">
           <label for="sel1">Select team (select one):</label>

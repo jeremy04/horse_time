@@ -18,7 +18,6 @@ require "active_support/core_ext/hash/indifferent_access"
 require "uri"
 require "net/http"
 require "pubnub"
-require 'byebug'
 
 enable :logging
 set :protection, except: [:json_csrf]

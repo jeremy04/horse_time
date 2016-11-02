@@ -1,7 +1,6 @@
 require 'open-uri'
 require 'pp'
 require 'nokogiri'
-require 'byebug'
 require 'json'
 require 'time'
 require 'active_support/core_ext/time'

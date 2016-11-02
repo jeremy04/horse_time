@@ -8,8 +8,24 @@ class PlayerStats
   end
 
   def points
-    if valid?
+    if valid?(:points)
       @stats[:stats].first[:splits].first[:stat][:points]
+    else
+      0
+    end
+  end
+
+  def goals
+    if valid?(:goals)
+      @stats[:stats].first[:splits].first[:stat][:goals]
+    else
+      0
+    end
+  end
+
+  def assists
+    if valid?(:assists)
+      @stats[:stats].first[:splits].first[:stat][:assists]
     else
       0
     end
@@ -17,8 +33,8 @@ class PlayerStats
 
   private
 
-  def valid?
-    @stats.try(:[], :stats).try(:first).try(:[], :splits).try(:first).try(:[], :stat).try(:[], :points)
+  def valid?(key)
+    @stats.try(:[], :stats).try(:first).try(:[], :splits).try(:first).try(:[], :stat).try(:[], key)
   end
 
 end

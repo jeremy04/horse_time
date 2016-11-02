@@ -74,17 +74,21 @@
       if (lookup_player === undefined || lookup_player === null)
       {
         console.log("Problem with: " + player);
-        hash[player] = 0;
+        hash[player] = {};
       }
       else {
-        hash[player] = lookup_player.points;
+        hash[player] = lookup_player;
       }
+      console.log(hash);
       return hash;
     });
     
-    players = _.sortBy(players, function(player) {
-      return -_.values(player)[0];
-    });
+    players = _.chain(players).sortBy(function(player) {
+      return _.values(player)[0].goals;
+    }).sortBy(function(player) {
+      return _.values(player)[0].points;
+    }).reverse().value();
+
     return players.slice(0, 5);
   }
 
@@ -92,11 +96,21 @@
   {
 
     _.each(top_points(eligibleHorses.horse_team, data), function(player) {
-      $("#other_team_scorers").append("<p class='indent'>" + _.keys(player)[0] + " : " +  _.values(player)[0] + "</p>");
+      $("#other_team_scorers table").append("<tr>"
+        + "<td><p class='indent'>" + _.keys(player)[0] + "</p></td>" 
+        + "<td><p class='indent'>" +  "P: " +  _.values(player)[0].points + "</p></td>"
+        + "<td><p class='indent'>" +  "G: " + _.values(player)[0].goals + "</p></td>"
+        + "<td><p class='indent'>" +  "A: " + _.values(player)[0].assists + "</p></td>"
+        +  "</tr><tr class='separator' />");
     });
 
     _.each(top_points(eligibleHorses.other_team, data), function(player) {
-      $("#horse_team_scorers").append("<p class='indent'>" + _.keys(player)[0] + " : " +  _.values(player)[0] + "</p>");
+       $("#horse_team_scorers table").append("<tr>"
+        + "<td><p class='indent'>" + _.keys(player)[0] + "</p></td>" 
+        + "<td><p class='indent'>" +  "P: " +  _.values(player)[0].points + "</p></td>"
+        + "<td><p class='indent'>" +  "G: " + _.values(player)[0].goals + "</p></td>"
+        + "<td><p class='indent'>" +  "A: " + _.values(player)[0].assists + "</p></td>"
+        +  "</tr><tr class='separator' />");
     });
 
   }
@@ -407,10 +421,14 @@
   <div id="top_horses">
     <h3><%= @horse_team %></h3>
     <div id="horse_team_scorers">
+      <table>
+      </table>
     </div>
     <BR />
     <h3><%= @other_team %></h3>
     <div id="other_team_scorers">
+      <table>
+      </table>
     </div>
   </div>
 </div>

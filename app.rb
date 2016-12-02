@@ -221,7 +221,7 @@ post "/logout" do
 end
 
 
-get %r{/room/([A-Z0-9]{4})} do
+get %r{/room/([A-Z0-9]{4})} do |code|
   if RoomCodeValidator.cookies_match_redis(cookies[:horsetime])
     @room_code = JSON.parse(cookies[:horsetime])["room_code"]
     @manager = REDIS.hget(@room_code, "room_manager")
@@ -240,9 +240,6 @@ get %r{/room/([A-Z0-9]{4})} do
       pick_order = PickOrder.new(@players, rounds)
       @pick_order = pick_order.generate_pick_order
 
-      # auto_pick = AutoPick.new(REDIS)
-      # auto_pick.create_scheduled_jobs(@room_code, @pick_order)
-
       @roster = JSON.parse(players).select { |p| p["status"] != "inactive" }.map { |acc, h| { acc["name"] => acc["horses"] } }.reduce(:merge)
       team_playing =  @teams.select { |team| team.first == REDIS.hget(@room_code, "horse_team") }.first
       if team_playing
@@ -255,7 +252,34 @@ get %r{/room/([A-Z0-9]{4})} do
       erb :room
     end
   else
-    redirect "/login"
+    
+    @room_code = code
+    
+    if REDIS.hget(@room_code, "ready") == "over"
+      @manager = REDIS.hget(@room_code, "room_manager")
+      @user = 'Guest'
+      players = REDIS.hget(@room_code, "players")
+      @players = JSON.parse(players).select { |p| p["status"] != "inactive" }.map { |p| p["name"] }
+      @teams = AvailableGames.games
+      @pick_count = REDIS.hget(@room_code, "pickCount")
+      @horses_per = REDIS.hget(@room_code, "horses_per").to_i
+      rounds = @horses_per * 2
+      pick_order = PickOrder.new(@players, rounds)
+      @pick_order = pick_order.generate_pick_order
+
+      @roster = JSON.parse(players).select { |p| p["status"] != "inactive" }.map { |acc, h| { acc["name"] => acc["horses"] } }.reduce(:merge)
+      team_playing =  @teams.select { |team| team.first == REDIS.hget(@room_code, "horse_team") }.first
+      if team_playing
+        @horse_team = team_playing.first
+        @other_team = team_playing[1]
+      else
+        @horse_team = "Pittsburgh Penguins"
+        @other_team = "Heroku sucks at time"
+      end
+      erb :room
+    else
+      redirect "/login"
+    end
   end
 end
 

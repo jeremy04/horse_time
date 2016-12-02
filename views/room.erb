@@ -185,7 +185,7 @@
           onSelect: function() { return; }
         });
         
-        var ht_cookie = JSON.parse(unescape(getCookieValue("horsetime")));
+        var ht_cookie = JSON.parse(unescape(getCookieValue("horsetime")) ? unescape(getCookieValue("horsetime")) : '{"name": "Guest"}' );
 
         if (ht_cookie.name == nextPlayer) {
           $("#draft" + nextPlayer).css("display", "inline");
@@ -342,7 +342,7 @@
             onSelect: function() { return; }
           });
         
-        var ht_cookie = JSON.parse(unescape(getCookieValue("horsetime")));
+        var ht_cookie = JSON.parse(unescape(getCookieValue("horsetime")) ? unescape(getCookieValue("horsetime")) : '{"name": "Guest"}' );
        
         if (ht_cookie.name == pickOrder[pickCount] ) {
           $("#draft" + ht_cookie.name).css("display", "inline");

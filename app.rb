@@ -158,7 +158,7 @@ post '/ghost_player' do
   if params[:name].present? && params[:room_code].present? && RoomCodeValidator.room_has_players?(params[:room_code])
     players = JSON.parse(REDIS.hget(params[:room_code], "players"))
     players = players.map { |p| p.with_indifferent_access }
-    params[:name] = params[:name].gsub(/\s/, "")
+    params[:name] = params[:name].gsub(/\W/, "")
     players << {name: params[:name], status: "new", horses: {horse_team: [], other_team: []}}
     
     return "error" if players.uniq { |p| p[:name] }.size != players.size
@@ -174,7 +174,7 @@ post "/login" do
   if params[:name].present? && params[:room_code].present? && RoomCodeValidator.room_has_players?(params[:room_code])
     players = JSON.parse(REDIS.hget(params[:room_code], "players"))
     players = players.map { |p| p.with_indifferent_access }
-    params[:name] = params[:name].gsub(/\s/, "")
+    params[:name] = params[:name].gsub(/\W/, "")
     players << {name: params[:name], status: "new", horses: {horse_team: [], other_team: []}}
     if players.size == 1
       REDIS.hset(params[:room_code], "room_manager", params[:name])

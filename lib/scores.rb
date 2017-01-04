@@ -29,8 +29,8 @@ class Scores
     jsonData = JSON.parse(page.body)
     home_team_id   = jsonData["gameData"]["teams"]["home"]["id"]
     away_team_id   = jsonData["gameData"]["teams"]["away"]["id"]
-    home_team_name = jsonData["gameData"]["teams"]["home"]["name"]
-    away_team_name = jsonData["gameData"]["teams"]["away"]["name"]
+    home_team_name = jsonData["gameData"]["teams"]["home"]["name"].gsub('é','e')
+    away_team_name = jsonData["gameData"]["teams"]["away"]["name"].gsub('é','e')
    
     uri = URI("https://statsapi.web.nhl.com/api/v1/teams?site=en_nhl&teamId=#{home_team_id},#{away_team_id}&expand=team.roster,roster.person,person.stats&stats=statsSingleSeason")
     http = Net::HTTP.new(uri.host, uri.port)
@@ -48,7 +48,7 @@ class Scores
     away_skaters = away_skaters.map { |s| [ ["name", s["fullName"] ] ,["goals", PlayerStats.new(s).goals], ["assists", PlayerStats.new(s).assists], ["points", PlayerStats.new(s).points], ["team", away_team_name], ["location", "other_team"] ].to_h }
 
     home_skaters = home_skaters.map { |x| x.merge('name' => normalize(x['name']) ) }
-    away_skaters = away_skaters.map { |x| x.merge('name' => normalize(x['name']) ) }
+    away_skaters = away_skaters.map { |x| x.merge('name' => normalize(x['name']) ) }    
 
     points = home_skaters + away_skaters
     points

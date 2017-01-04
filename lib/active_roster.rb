@@ -26,8 +26,8 @@ class ActiveRoster
     jsonData = JSON.parse(page.body)
     players = jsonData["gameData"]["players"].map { |p| p[1] }
     if players.size > 0
-      home_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"] == latest_game["homeTeam"] }.map { |p| p["fullName"] }
-      away_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"] == latest_game["awayTeam"] }.map { |p| p["fullName"] }
+      home_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].gsub('é','e') == latest_game["homeTeam"].gsub('é','e') }.map { |p| p["fullName"] }
+      away_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].gsub('é','e') == latest_game["awayTeam"].gsub('é','e') }.map { |p| p["fullName"] }
     else
       home_team_id = jsonData["gameData"]["teams"]["home"]["id"]
       away_team_id = jsonData["gameData"]["teams"]["away"]["id"]

@@ -155,16 +155,37 @@ end
 post '/ghost_player' do
   
   params[:room_code] = params[:room_code].upcase
-  if params[:name].present? && params[:room_code].present? && RoomCodeValidator.room_has_players?(params[:room_code])
+
+  if params[:name].present? && params[:room_code].present?
     players = JSON.parse(REDIS.hget(params[:room_code], "players"))
     players = players.map { |p| p.with_indifferent_access }
     params[:name] = params[:name].gsub(/\W/, "")
-    players << {name: params[:name], status: "new", horses: {horse_team: [], other_team: []}}
+
+    horses = { horse_team: [params[:horse_team_1], params[:horse_team_2]].compact, 
+               other_team: [params[:other_team_1], params[:other_team_2]].compact }
+
+    picks = horses[:horse_team] + horses[:other_team]
+
+    return "blank" if picks.uniq.size < 4 && params[:scrub]
+    return "duplicate" if picks.uniq.size != picks.size
+
+    if picks.any? do |pick| 
+        players.any? { |p| p[:horses][:horse_team].include?(pick) || p[:horses][:other_team].include?(pick) } 
+      end
+      return "duplicate"
+    end
+
+    players << {name: params[:name], status: "new", horses: horses }
     
     return "error" if players.uniq { |p| p[:name] }.size != players.size
     players = players.uniq { |p| p[:name] }
 
     REDIS.hset(params[:room_code], "players", JSON.dump(players) )
+    if params[:scrub]
+      pickCount = REDIS.hget(params[:room_code], "pickCount").to_i
+      pickCount += 4
+      REDIS.hset(params[:room_code], "pickCount", pickCount)
+    end
   end
   params[:name]
 end

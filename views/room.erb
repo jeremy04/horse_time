@@ -1,9 +1,11 @@
 <script>
+(function($){
   var eligibleHorses;
   var timer;
   var draftOrder;
   var pickCount = <%= @pick_count %>;
   var spareHorses = [];
+  
   var pubnub = PUBNUB({
       subscribe_key: 'sub-c-ce8ecf20-6eb2-11e5-ba34-02ee2ddab7fe', 
       publish_key: 'pub-c-af81b32e-d0dd-48a3-bac3-fbf02d262285'    
@@ -12,7 +14,7 @@
 
 
   <% if @game_over %>
-    setTimeout("location.reload(true);", 30000);
+    //setTimeout("location.reload(true);", 30000);
   <% end %>
 
 
@@ -27,6 +29,7 @@
 
       function updateTimer()
       {
+        if (element != null ) {
           msLeft = endTime - (+new Date);
           if ( msLeft < 1000 ) {
               element.innerHTML = "countdown's over!";
@@ -37,6 +40,7 @@
               element.innerHTML = (hours ? hours + ':' + twoDigits( mins ) : mins) + ':' + twoDigits( time.getUTCSeconds() );
               timer = setTimeout( updateTimer, time.getUTCMilliseconds() + 500 );
           }
+        }
       }
 
       element = document.getElementById( elementName );
@@ -48,6 +52,55 @@
   function getCookieValue(a, b) {
     b = document.cookie.match('(^|;)\\s*' + a + '\\s*=\\s*([^;]+)');
     return b ? b.pop() : '';
+  }
+
+  function addUser()
+  {
+    var name = $( "#name" ).val(),
+      horse_team_1 = $( "#horse_team_1" ).val(),
+      horse_team_2 = $( "#horse_team_2" ).val(),
+      other_team_1 = $( "#other_team_1" ).val(),
+      other_team_2 = $( "#other_team_2" ).val();
+
+      if (name =='' || horse_team_1 =='' || horse_team_2 == '' || other_team_1 == '' || other_team_2 == '') {
+        alert("Fill in the values bro!")
+        return;
+      }
+      
+      if (!_.contains(spareHorses, horse_team_1)) { alert("That's not a horse, bro"); return; }
+      if (!_.contains(spareHorses, horse_team_2)) { alert("That's not a horse, bro"); return; }
+      if (!_.contains(spareHorses, other_team_1)) { alert("That's not a horse, bro"); return; }
+      if (!_.contains(spareHorses, other_team_2)) { alert("That's not a horse, bro"); return; }
+
+      $.post('/ghost_player', 
+        { room_code: "<%= @room_code %>",
+          name: name,
+          horse_team_1: horse_team_1,
+          horse_team_2: horse_team_2,
+          other_team_1: other_team_1,
+          other_team_2: other_team_2,
+          scrub: true
+        }, 
+          function(returnedData){
+            if(returnedData != 'error' && returnedData != 'duplicate') {
+              $( "#dialog-form" ).dialog( "close" );
+              location.reload();
+            }
+            else
+            {
+              if ($('#error').val() == undefined ) {
+                if (returnedData == 'error') {
+                  message = 'Blank horse bro';
+                }
+                if (returnedData == 'duplicate') {
+                  message = 'Duplicate horse try again';
+                }
+
+                $("#dialog-form").prepend("<span id='error'>" + message + "</span>");
+              }
+            }
+          });
+
   }
 
   function horsesLeft(roster, eligibleHorses)
@@ -318,6 +371,40 @@
 }
 
   $( document ).ready(function() {
+    var dialog, form;
+    var name = $( "#name" ),
+      horse_team_1 = $( "#horse_team_1" ),
+      horse_team_2 = $( "#horse_team_2" ),
+      other_team_1 = $( "#other_team_1" ),
+      other_team_2 = $( "#other_team_2" ),
+      
+      allFields = $( [] ).add( name ).add( horse_team_1 ).add( horse_team_2 ).add( other_team_1 ).add( other_team_2 );
+
+    dialog = $( "#dialog-form" ).dialog({
+          autoOpen: false,
+          height: 400,
+          width: 350,
+          modal: true,
+          buttons: [
+          {
+            text: "Ok",
+            click: function() {
+              addUser();
+            }
+          },
+          {
+            text: "Cancel",
+            click: function() {
+              $( this ).dialog( "close" );
+            }
+          }
+      ]
+    });
+ 
+    $( "#create-user" ).on( "click", function() {
+      dialog.dialog( "open" );
+    });
+
 
     function show_draft(pickOrder) {
       randomPlayers = <%= @players.to_json %>;
@@ -350,6 +437,17 @@
         }
 
       });
+
+    
+      <% ['horse_team_1','horse_team_2','other_team_1', 'other_team_2'].each do |horse| %>
+        
+        $("input[name=\"" + <%= horse.to_json %> +  "\"]").autocomplete({
+            orientation: "auto",
+            minChars: '2',
+            lookup: spareHorses,
+            onSelect: function() { return; }
+          });
+      <% end %>
 
     }
 
@@ -396,12 +494,10 @@
         });
 
 
-    });
-
-
-    
+    });    
 
 });
+})(jQuery);
 </script>
 <div class="row">
 <div class="col-md-4" id="selectHorse">
@@ -431,6 +527,29 @@
     </div>
   </div>
 </div>
+<% if @manager == @user && (@game_over) %>
+<div id="dialog-form" title="Create new user ;)"> 
+  <form>
+    <fieldset>
+      <label for="name">Name</label>
+      <input type="text" name="name" id="name" value="">
+      <label for="horse_team_1">Horse 1 (home):</label>
+      <input type="text" name="horse_team_1" class="form-control" autocomplete="off" id="horse_team_1" value="">
+      <label for="horse_team_2">Horse 2 (home):</label>
+      <input type="text" name="horse_team_2" class="form-control" autocomplete="off" id="horse_team_2" value="">
+      <label for="other_team_1">Horse 3 (away):</label>
+      <input type="text" name="other_team_1" class="form-control" autocomplete="off" id="other_team_1" value="">
+      <label for="other_team_2">Horse 4 (away):</label>
+      <input type="text" name="other_team_2" class="form-control" autocomplete="off" id="other_team_2" value="">
+ 
+      <!-- Allow form submission with keyboard without duplicating the dialog button -->
+      <input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
+    </fieldset>
+  </form>
+</div>
+
+<button class="btn btn-default" id='create-user'>Add New Player</button>
+<% end %>
 <% if @manager == @user && (!@game_over) %>
 <div class="col-md-4" id='autodraft-div'>
   <h2>AutoDraft</h2>

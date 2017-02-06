@@ -3,8 +3,12 @@ require "./lib/scores"
 class AutoPickTime
   attr_reader :selection
 
+  def initialize(horses_per)
+    @horses_per = horses_per
+  end
+
   def call(horses, picked_horses, params)
-    teams_left = horses.keys.select { |k| horses[k].size < 2 }
+    teams_left = horses.keys.select { |k| horses[k].size < @horses_per }
     picked_horses = picked_horses.map { |h| h.downcase }
     wrapper = CacheWrapper.new(params[:game_team], params[:room_code])
     season_stats = JSON.parse(wrapper.get_cached(Scores.new(params[:game_team]), "season_goals"))

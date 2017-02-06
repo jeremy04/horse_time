@@ -76,7 +76,8 @@ get "/auto_pick.json" do
 
   horses = players.select { |h| h["name"] == params[:name] }.first["horses"]
   horses_picked = players.map { |x| x["horses"].values.flatten }.flatten
-  auto_pick_time = AutoPickTime.new
+  horses_per = REDIS.hget(params[:room_code], "horses_per").to_i
+  auto_pick_time = AutoPickTime.new(horses_per)
   horses = auto_pick_time.call(horses, horses_picked, params)
 
   players.each do |player|

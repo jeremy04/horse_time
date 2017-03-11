@@ -75,7 +75,7 @@ class ActiveRoster
   private
 
   def normalize(name)
-    name.split.join(" ").downcase.gsub(/[^\w\s]/,'')
+    name.split.join(" ").downcase.gsub(/[^\w\s\-]/,'')
   end
 
   def horse_games(json)

@@ -97,7 +97,7 @@ class Scores
   end
 
   def normalize(name)
-    name.split.join(" ").downcase.gsub(/[^\w\s]/,'')
+    name.split.join(" ").downcase.gsub(/[^\w\s\-]/,'')
   end
 
 end

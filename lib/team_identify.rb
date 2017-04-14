@@ -13,7 +13,7 @@ class TeamIdentify
   end
 
   def determine_team
-    json = JSON.parse(File.read("schedule.json"))
+    json = JSON.parse(File.read("playoff_schedule.json"))
 
     # Get latest game
     latest_game = horse_games(json).select { |h| Date.parse(h["date"]) == (@date.utc + Time.zone_offset("-10")).to_date }.first

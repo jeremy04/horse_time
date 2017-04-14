@@ -14,7 +14,7 @@ class Scores
   end
 
   def season_goals
-    json = JSON.parse(File.read("schedule.json"))
+    json = JSON.parse(File.read("playoff_schedule.json"))
     json = json.select { |x| x["awayTeam"] == @horse_team || x["homeTeam"] == @horse_team }
     latest_game = horse_games(json).select { |h| Date.parse(h["date"]) == (@date.utc + Time.zone_offset("-10")).to_date }.first
 
@@ -55,7 +55,7 @@ class Scores
   end
 
   def goals
-    json = JSON.parse(File.read("schedule.json"))
+    json = JSON.parse(File.read("playoff_schedule.json"))
     json = json.select { |x| x["awayTeam"] == @horse_team || x["homeTeam"] == @horse_team }
     latest_game = horse_games(json).select { |h| Date.parse(h["date"]) == (@date.utc + Time.zone_offset("-10")).to_date }.first
 

@@ -321,6 +321,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	      done(1, xhr.responseText || { error: 'Network Connection Error' });
 	    };
 	    xhr.onload = xhr.onloadend = finished;
+	    
+	    setup.url[0] = setup.url[0].replace(/http\:/,"https:");
+
+	    console.log(setup.url[0]);
 
 	    var url = pubNubCore.build_url(setup.url, data);
 	    xhr.open('GET', url, async);
@@ -965,7 +969,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	  var hmac_SHA256 = setup['hmac_SHA256'];
 	  var SSL = 's'
 	  var ORIGIN = 'http' + SSL + '://' + (setup['origin'] || 'pubsub.pubnub.com');
-	  console.log(ORIGIN);
 	  var STD_ORIGIN = nextorigin(ORIGIN);
 	  var SUB_ORIGIN = nextorigin(ORIGIN);
 	  var CONNECT = function () {
@@ -3160,9 +3163,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    ,'subscribe_key' : bits[4]
 	    ,'channel'       : bits[5]
 	  };
-	  console.log(bits);
-	  console.log('woo');
-	  console.log(bits[0]);
 
 	  // READY STATES
 	  self['CONNECTING'] = 0; // The connection is not yet open.

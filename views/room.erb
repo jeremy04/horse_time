@@ -8,7 +8,8 @@
   
   var pubnub = PUBNUB({
       subscribe_key: 'sub-c-ce8ecf20-6eb2-11e5-ba34-02ee2ddab7fe', 
-      publish_key: 'pub-c-af81b32e-d0dd-48a3-bac3-fbf02d262285'    
+      publish_key: 'pub-c-af81b32e-d0dd-48a3-bac3-fbf02d262285',
+      ssl : (('https:' == document.location.protocol) ? true : false)
     });
   var shotTotals = {};
 

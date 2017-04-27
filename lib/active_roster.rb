@@ -11,10 +11,10 @@ class ActiveRoster
   end
 
   def active_roster
-    json = JSON.parse(File.read("playoff_schedule.json"))
+    ac = AvailableGames.new
+    json = ac.json
     json = json.select { |x| x["awayTeam"] == @horse_team || x["homeTeam"] == @horse_team }
     latest_game = horse_games(json).select { |h| Date.parse(h["date"]) == (@date.utc + Time.zone_offset("-10")).to_date }.first
-    
     begin
       agent = Mechanize.new{|a| a.ssl_version, a.verify_mode = :TLSv1_2, OpenSSL::SSL::VERIFY_NONE}
       puts "Getting team ids: https://statsapi.web.nhl.com/api/v1/game/#{latest_game["gameID"]}/feed/live?site=en_nhl"

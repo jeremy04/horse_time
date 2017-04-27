@@ -250,7 +250,7 @@ get %r{/room/([A-Z0-9]{4})} do |code|
     @user = JSON.parse(cookies[:horsetime])["name"]
     players = REDIS.hget(@room_code, "players")
     @players = JSON.parse(players).select { |p| p["status"] != "inactive" }.map { |p| p["name"] }
-    @teams = AvailableGames.games
+    @teams = AvailableGames.new.games
     @game_over = REDIS.hget(@room_code, "ready") == "over"
     if REDIS.hget(@room_code, "ready") == "false"
       erb :lobby

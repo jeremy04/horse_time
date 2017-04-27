@@ -11,11 +11,11 @@ class Scores
   def initialize(horse_team, date=Time.now)
     @horse_team = horse_team
     @date = date
+    @json = AvailableGames.new.json
   end
 
   def season_goals
-    json = JSON.parse(File.read("playoff_schedule.json"))
-    json = json.select { |x| x["awayTeam"] == @horse_team || x["homeTeam"] == @horse_team }
+    json = @json.select { |x| x["awayTeam"] == @horse_team || x["homeTeam"] == @horse_team }
     latest_game = horse_games(json).select { |h| Date.parse(h["date"]) == (@date.utc + Time.zone_offset("-10")).to_date }.first
 
     uri = URI("https://statsapi.web.nhl.com/api/v1/game/#{latest_game["gameID"]}/feed/live?site=en_nhl")
@@ -55,8 +55,7 @@ class Scores
   end
 
   def goals
-    json = JSON.parse(File.read("playoff_schedule.json"))
-    json = json.select { |x| x["awayTeam"] == @horse_team || x["homeTeam"] == @horse_team }
+    json = @json.select { |x| x["awayTeam"] == @horse_team || x["homeTeam"] == @horse_team }
     latest_game = horse_games(json).select { |h| Date.parse(h["date"]) == (@date.utc + Time.zone_offset("-10")).to_date }.first
 
     begin

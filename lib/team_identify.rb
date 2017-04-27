@@ -10,10 +10,11 @@ class TeamIdentify
     @horse_team = horse_team
     @agent = Mechanize.new{|a| a.ssl_version, a.verify_mode = :TLSv1_2, OpenSSL::SSL::VERIFY_NONE}
     @date = date
+    @json = AvailableGames.new.json
   end
 
   def determine_team
-    json = JSON.parse(File.read("playoff_schedule.json"))
+    json = @json
 
     # Get latest game
     latest_game = horse_games(json).select { |h| Date.parse(h["date"]) == (@date.utc + Time.zone_offset("-10")).to_date }.first

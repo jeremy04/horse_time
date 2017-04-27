@@ -963,7 +963,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  var AUTH_KEY = setup['auth_key'] || '';
 	  var SECRET_KEY = setup['secret_key'] || '';
 	  var hmac_SHA256 = setup['hmac_SHA256'];
-	  var SSL = setup['ssl'] ? 's' : '';
+	  var SSL = 's'
 	  var ORIGIN = 'http' + SSL + '://' + (setup['origin'] || 'pubsub.pubnub.com');
 	  console.log(ORIGIN);
 	  var STD_ORIGIN = nextorigin(ORIGIN);

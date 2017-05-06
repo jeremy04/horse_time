@@ -250,7 +250,7 @@ get %r{/room/([A-Z0-9]{4})} do |code|
     @user = JSON.parse(cookies[:horsetime])["name"]
     players = REDIS.hget(@room_code, "players")
     @players = JSON.parse(players).select { |p| p["status"] != "inactive" }.map { |p| p["name"] }
-    wrapper = CacheWrapper.new("available_games", @room_code)
+    wrapper = CacheWrapper.new("available_games", "games")
     @teams = JSON.parse(wrapper.get_cached(AvailableGames.new, "games"))
 
     @game_over = REDIS.hget(@room_code, "ready") == "over"
@@ -285,7 +285,7 @@ get %r{/room/([A-Z0-9]{4})} do |code|
       players = REDIS.hget(@room_code, "players")
       @players = JSON.parse(players).select { |p| p["status"] != "inactive" }.map { |p| p["name"] }
 
-      wrapper = CacheWrapper.new("available_games", @room_code)
+      wrapper = CacheWrapper.new("available_games", "games")
       @teams = JSON.parse(wrapper.get_cached(AvailableGames.new, "games"))
       @pick_count = REDIS.hget(@room_code, "pickCount")
       @horses_per = REDIS.hget(@room_code, "horses_per").to_i

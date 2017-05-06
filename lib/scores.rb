@@ -1,4 +1,5 @@
 require 'mechanize'
+require './lib/cache_wrapper'
 require 'active_support/all'
 require 'sinatra/contrib/all'
 require 'nokogiri'
@@ -11,7 +12,8 @@ class Scores
   def initialize(horse_team, date=Time.now)
     @horse_team = horse_team
     @date = date
-    @json = AvailableGames.new.json
+    wrapper = CacheWrapper.new("available_games", "games")
+    @json = JSON.parse(wrapper.get_cached(AvailableGames.new, "json"))
   end
 
   def season_goals

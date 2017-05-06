@@ -3,6 +3,7 @@ require 'json'
 require 'nokogiri'
 require './lib/team_identify'
 require './lib/team_scrapper'
+require './lib/cache_wrapper'
 
 class ActiveRoster
   def initialize(horse_team, date=Time.now)
@@ -11,8 +12,8 @@ class ActiveRoster
   end
 
   def active_roster
-    ac = AvailableGames.new
-    json = ac.json
+    wrapper = CacheWrapper.new("available_games", "games")
+    json = JSON.parse(wrapper.get_cached(AvailableGames.new, "json"))
     json = json.select { |x| x["awayTeam"] == @horse_team || x["homeTeam"] == @horse_team }
     latest_game = horse_games(json).select { |h| Date.parse(h["date"]) == (@date.utc + Time.zone_offset("-10")).to_date }.first
     begin

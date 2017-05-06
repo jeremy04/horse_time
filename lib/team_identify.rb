@@ -2,6 +2,8 @@ require 'mechanize'
 require 'json'
 require 'nokogiri'
 require 'active_support/all'
+require './lib/cache_wrapper'
+
 
 class TeamIdentify
   attr_reader :other_team
@@ -10,7 +12,8 @@ class TeamIdentify
     @horse_team = horse_team
     @agent = Mechanize.new{|a| a.ssl_version, a.verify_mode = :TLSv1_2, OpenSSL::SSL::VERIFY_NONE}
     @date = date
-    @json = AvailableGames.new.json
+    wrapper = CacheWrapper.new("available_games", "games")
+    @json = JSON.parse(wrapper.get_cached(AvailableGames.new, "json"))
   end
 
   def determine_team

@@ -1,7 +1,6 @@
 require 'mechanize'
 require 'json'
 require 'active_support/all'
-require 'byebug'
 
 class AvailableGames
 

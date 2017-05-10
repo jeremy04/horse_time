@@ -1,4 +1,4 @@
-require 'mechanize'
+require 'net/https'
 require 'json'
 require 'nokogiri'
 require 'active_support/all'
@@ -10,7 +10,6 @@ class TeamIdentify
 
   def initialize(horse_team, date=Time.now)
     @horse_team = horse_team
-    @agent = Mechanize.new{|a| a.ssl_version, a.verify_mode = :TLSv1_2, OpenSSL::SSL::VERIFY_NONE}
     @date = date
     wrapper = CacheWrapper.new("available_games", "games")
     @json = JSON.parse(wrapper.get_cached(AvailableGames.new, "json"))
@@ -34,7 +33,9 @@ class TeamIdentify
   end
 
   def get_link(team)
-    page = @agent.get("http://www2.dailyfaceoff.com/teams/")
+    uri = URI("http://www2.dailyfaceoff.com/teams/")
+    http = Net::HTTP.new(uri.host, uri.port)
+    page = http.get(uri.request_uri)
     doc = Nokogiri::HTML(page.body)
     link = doc.css("#matchups_container a").map { |x| x.attributes["href"].value }.select { |x| x =~ /#{team.gsub(/\W/," ").squish.gsub(" ", "-").downcase}/  }
     "http://www2.dailyfaceoff.com/#{link.first}"

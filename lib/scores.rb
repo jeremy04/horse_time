@@ -1,4 +1,3 @@
-require 'mechanize'
 require './lib/cache_wrapper'
 require 'active_support/all'
 require 'sinatra/contrib/all'
@@ -60,16 +59,12 @@ class Scores
     json = @json.select { |x| x["awayTeam"] == @horse_team || x["homeTeam"] == @horse_team }
     latest_game = horse_games(json).select { |h| Date.parse(h["date"]) == (@date.utc + Time.zone_offset("-10")).to_date }.first
 
-    begin
-      uri = URI("https://statsapi.web.nhl.com/api/v1/game/#{latest_game["gameID"]}/feed/live?site=en_nhl")
-      http = Net::HTTP.new(uri.host, uri.port)
-      http.use_ssl = true
-      http.ssl_version = :TLSv1_2
-      http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-      page = http.get(uri.path)
-    rescue Mechanize::ResponseCodeError => e
-      return {:goals => [], :assists => [] }
-    end
+    uri = URI("https://statsapi.web.nhl.com/api/v1/game/#{latest_game["gameID"]}/feed/live?site=en_nhl")
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = true
+    http.ssl_version = :TLSv1_2
+    http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    page = http.get(uri.path)
 
     jsonData =  JSON.parse(page.body)
     home_skaters = jsonData["liveData"]["boxscore"]["teams"]["home"]["players"].map { |p| p[1] }

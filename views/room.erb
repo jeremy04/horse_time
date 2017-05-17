@@ -528,6 +528,19 @@
     </div>
   </div>
 </div>
+
+<div class="col-md-4">
+  <h2>Scratches</h2>
+  <div id="show_scratches">
+
+  <% @scratches.each do |scratch| %>
+    <p><%= scratch %></p>
+  <% end %>
+  </div>
+</div>
+
+
+
 <% if @manager == @user && (@game_over) %>
 <div id="dialog-form" title="Create new user ;)"> 
   <form>
@@ -550,6 +563,23 @@
 </div>
 
 <button class="btn btn-default" id='create-user'>Add New Player</button>
+
+
+<div class="form-group">
+  <% @scratches.each do |scratch| %>
+    <p id="<%= scratch %>"><%= scratch %></p>
+    <p>
+    <button type='submit' class='btn btn-default remove_scratch' id='<%= scratch %>'  role='button'>Remove</button> 
+    </p>
+
+  <% end %>
+
+  Add Scratched Player:
+
+  <input type="text" name="scratch_player" placeholder="ENTER FULL NAME OF SCRATCH" class="form-control">
+  <button type="submit" id="scratch_player" class="btn btn-success">ADD</button>
+</div>
+
 <% end %>
 <% if @manager == @user && (!@game_over) %>
 <div class="col-md-4" id='autodraft-div'>

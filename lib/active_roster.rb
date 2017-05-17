@@ -4,11 +4,13 @@ require 'nokogiri'
 require './lib/team_identify'
 require './lib/team_scrapper'
 require './lib/cache_wrapper'
+require 'byebug'
 
 class ActiveRoster
-  def initialize(horse_team, date=Time.now)
+  def initialize(horse_team, room_code, date=Time.now)
     @horse_team = horse_team
     @date = date
+    @room_code = room_code
   end
 
   def active_roster
@@ -49,6 +51,9 @@ class ActiveRoster
     end
 
 
+    scratches = JSON.parse(REDIS.hget(@room_code, "scratches")).map { |h| normalize(h) }
+
+
     i = TeamIdentify.new(@horse_team)
     horse_link, other_link = i.determine_team
 
@@ -61,10 +66,10 @@ class ActiveRoster
     other_lines = s2.scrape_players[:players]
 
     home_skaters = home_skaters.map { |h| normalize(h) }
-    horse_lines = horse_lines.map { |h| normalize(h) }
+    horse_lines = horse_lines.map { |h| normalize(h) } - scratches
 
     away_skaters = away_skaters.map { |h| normalize(h) }
-    other_lines = other_lines.map { |h| normalize(h) }
+    other_lines = other_lines.map { |h| normalize(h) } - scratches
 
     if latest_game["homeTeam"] == @horse_team
       return { :horse_team => home_skaters & horse_lines, :other_team => away_skaters & other_lines }

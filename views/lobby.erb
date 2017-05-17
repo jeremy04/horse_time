@@ -26,6 +26,48 @@ $(document).ready(function() {
 
   });
 
+
+$("#scratch_player").on("click", function(){
+
+    $.post('/add_scratch_player', 
+          { room_code: "<%= @room_code %>",
+            name: $("input[name=scratch_player]").val()
+          }, 
+            function(returnedData){
+              if(returnedData != 'error') {
+
+                pubnub.publish({
+                  channel: 'signon',        
+                  message:  { user: returnedData },
+                  callback : function(m){}
+                });
+              }
+            });
+
+  });
+
+  $(".remove_scratch").on("click", function(){
+    var name = $(this).prop('id');
+    
+    var hash = { 
+            room_code: "<%= @room_code %>",
+            name: name,
+          }
+    $.post('/remove_scratch_player', hash, 
+            function(returnedData){
+              if(returnedData != 'error') {
+
+                pubnub.publish({
+                  channel: 'signon',        
+                  message:  { user: returnedData },
+                  callback : function(m){}
+                });
+              }
+            });
+
+  });
+
+
   $("#start_game").on("click", function(event){
     event.preventDefault();
     
@@ -128,6 +170,23 @@ $(document).ready(function() {
     <p>
       <% if @teams.present? %>
       <BR />
+
+      <div class="form-group">
+        <% @scratches.each do |scratch| %>
+          <p id="<%= scratch %>"><%= scratch %></p>
+          <p>
+          <button type='submit' class='btn btn-default remove_scratch' id='<%= scratch %>'  role='button'>Remove</button> 
+          </p>
+
+        <% end %>
+
+        Add Scratched Player:
+
+        <input type="text" name="scratch_player" placeholder="ENTER FULL NAME OF SCRATCH" class="form-control">
+        <button type="submit" id="scratch_player" class="btn btn-success">ADD</button>
+      </div>
+
+
       Add Ghost Player:
       <div class="form-group">
         <input type="text" name="ghost_player" placeholder="ENTER GHOST NAME" class="form-control">

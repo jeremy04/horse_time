@@ -153,6 +153,24 @@ get "/get_players.json" do
   {"players" => players, "pickCount" => count}.to_json
 end
 
+
+post '/add_scratch_player' do
+  
+  params[:room_code] = params[:room_code].upcase
+  scratches = JSON.parse(REDIS.hget(params[:room_code], "scratches"))
+  scratches << params[:name]
+  REDIS.hset(params[:room_code], "scratches", JSON.dump(scratches.uniq) )
+
+end
+
+post '/remove_scratch_player' do
+  params[:room_code] = params[:room_code].upcase
+  scratches = JSON.parse(REDIS.hget(params[:room_code], "scratches"))
+  scratches.delete(params[:name])
+  REDIS.hset(params[:room_code], "scratches", JSON.dump(scratches.uniq) )
+end
+
+
 post '/ghost_player' do
   
   params[:room_code] = params[:room_code].upcase
@@ -252,7 +270,7 @@ get %r{/room/([A-Z0-9]{4})} do |code|
     @players = JSON.parse(players).select { |p| p["status"] != "inactive" }.map { |p| p["name"] }
     wrapper = CacheWrapper.new("available_games", "games")
     @teams = JSON.parse(wrapper.get_cached(AvailableGames.new, "games"))
-
+    @scratches = JSON.parse(REDIS.hget(@room_code, "scratches"))
     @game_over = REDIS.hget(@room_code, "ready") == "over"
     if REDIS.hget(@room_code, "ready") == "false"
       erb :lobby
@@ -339,6 +357,7 @@ post "/generate_room_code.json" do
   content_type :json
   activation_code = generate_activation_code
   REDIS.hset(activation_code, "players", JSON.dump([]))
+  REDIS.hset(activation_code, "scratches", JSON.dump([]))
   REDIS.hset(activation_code, "ready", false)
   REDIS.expire(activation_code, 10.hour.to_i)
   {:room_code => activation_code}.to_json
@@ -351,7 +370,7 @@ get "/season_stats.json" do
 
   wrapper = CacheWrapper.new(horse_team, room_code)
   season_stats = JSON.parse(wrapper.get_cached(Scores.new(horse_team), "season_goals"))
-  active_roster = JSON.parse(wrapper.get_cached(ActiveRoster.new(horse_team), "active_roster"))
+  active_roster = JSON.parse(wrapper.get_cached(ActiveRoster.new(horse_team, room_code), "active_roster"))
   season_stats.select { |player| active_roster[player["location"]].include?(player["name"]) }.to_json
 end
 

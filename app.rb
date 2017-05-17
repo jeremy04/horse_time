@@ -296,6 +296,7 @@ get %r{/room/([A-Z0-9]{4})} do |code|
   else
     
     @room_code = code
+     @scratches = JSON.parse(REDIS.hget(@room_code, "scratches"))
     
     if REDIS.hget(@room_code, "ready") == "over"
       @manager = REDIS.hget(@room_code, "room_manager")

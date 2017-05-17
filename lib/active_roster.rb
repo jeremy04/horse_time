@@ -4,7 +4,6 @@ require 'nokogiri'
 require './lib/team_identify'
 require './lib/team_scrapper'
 require './lib/cache_wrapper'
-require 'byebug'
 
 class ActiveRoster
   def initialize(horse_team, room_code, date=Time.now)

@@ -3,7 +3,7 @@ require 'json'
 require 'nokogiri'
 require 'active_support/all'
 require './lib/cache_wrapper'
-
+require './lib/available_games'
 
 class TeamIdentify
   attr_reader :other_team
@@ -33,12 +33,15 @@ class TeamIdentify
   end
 
   def get_link(team)
-    uri = URI("http://www2.dailyfaceoff.com/teams/")
+    uri = URI("https://www.dailyfaceoff.com/teams/")
     http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = true
+    http.ssl_version = :TLSv1_2
+    http.verify_mode = OpenSSL::SSL::VERIFY_PEER
     page = http.get(uri.request_uri)
     doc = Nokogiri::HTML(page.body)
-    link = doc.css("#matchups_container a").map { |x| x.attributes["href"].value }.select { |x| x =~ /#{team.gsub(/\W/," ").squish.gsub(" ", "-").downcase}/  }
-    "http://www2.dailyfaceoff.com/#{link.first}"
+    link = doc.css(".site-main_primary.columns a").map { |x| x.attributes["href"].value }.select { |x| x =~ /#{team.gsub(/\W/," ").squish.gsub(" ", "-").downcase}/  }
+    "https://www.dailyfaceoff.com/#{link.first}"
   end
 
   def determine_other_team(element)

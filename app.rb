@@ -93,7 +93,7 @@ get "/auto_pick.json" do
     pickCount = REDIS.hget(params[:room_code], "pickCount").to_i
     pickCount += 1
     REDIS.hset(params[:room_code], "pickCount", pickCount)
-    
+
     REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * (2 * horses_per))
 
     PUBNUB.publish({
@@ -122,7 +122,7 @@ post "/update_pick.json" do
   horses["other_team"] << params[:other_team] if params[:other_team]
   players.each do |player|
     if player["name"] == params[:name]
-      player["horses"] = horses 
+      player["horses"] = horses
     end
   end
 
@@ -136,7 +136,7 @@ post "/update_pick.json" do
     pickCount = REDIS.hget(params[:room_code], "pickCount").to_i
     pickCount += 1
     REDIS.hset(params[:room_code], "pickCount", pickCount)
-    REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * (2 * horses_per)) 
+    REDIS.hset(params[:room_code], "ready", "over") if pickCount > (players.size * (2 * horses_per))
     puts "#{params[:name]} picked #{params[:horse_team] || params[:other_team] }"
     {message: "Updated sucessfully" , errors: []}.to_json
   else
@@ -155,7 +155,7 @@ end
 
 
 post '/add_scratch_player' do
-  
+
   params[:room_code] = params[:room_code].upcase
   scratches = JSON.parse(REDIS.hget(params[:room_code], "scratches"))
   scratches << params[:name]
@@ -172,7 +172,7 @@ end
 
 
 post '/ghost_player' do
-  
+
   params[:room_code] = params[:room_code].upcase
 
   if params[:name].present? && params[:room_code].present?
@@ -180,7 +180,7 @@ post '/ghost_player' do
     players = players.map { |p| p.with_indifferent_access }
     params[:name] = params[:name].gsub(/\W/, "")
 
-    horses = { horse_team: [params[:horse_team_1], params[:horse_team_2]].compact, 
+    horses = { horse_team: [params[:horse_team_1], params[:horse_team_2]].compact,
                other_team: [params[:other_team_1], params[:other_team_2]].compact }
 
     picks = horses[:horse_team] + horses[:other_team]
@@ -188,14 +188,14 @@ post '/ghost_player' do
     return "blank" if picks.uniq.size < 4 && params[:scrub]
     return "duplicate" if picks.uniq.size != picks.size
 
-    if picks.any? do |pick| 
-        players.any? { |p| p[:horses][:horse_team].include?(pick) || p[:horses][:other_team].include?(pick) } 
+    if picks.any? do |pick|
+        players.any? { |p| p[:horses][:horse_team].include?(pick) || p[:horses][:other_team].include?(pick) }
       end
       return "duplicate"
     end
 
     players << {name: params[:name], status: "new", horses: horses }
-    
+
     return "error" if players.uniq { |p| p[:name] }.size != players.size
     players = players.uniq { |p| p[:name] }
 
@@ -237,7 +237,7 @@ post "/logout" do
   room_code = JSON.parse(cookies[:horsetime])["room_code"]
   players = REDIS.hget(room_code, "players")
 
-  # Manager left 
+  # Manager left
   if players.nil?
     response.delete_cookie "horsetime"
     redirect "/"
@@ -294,10 +294,10 @@ get %r{/room/([A-Z0-9]{4})} do |code|
       erb :room
     end
   else
-    
+
     @room_code = code
      @scratches = JSON.parse(REDIS.hget(@room_code, "scratches"))
-    
+
     if REDIS.hget(@room_code, "ready") == "over"
       @manager = REDIS.hget(@room_code, "room_manager")
       @user = 'Guest'
@@ -394,6 +394,10 @@ end
 
 get "/cat_fact" do
   "#{CatFacts.new.random_fact}"
+end
+
+get "/webrtc" do
+  send_file 'easy_rtc.html'
 end
 
 get "/ATriggerVerify.txt" do

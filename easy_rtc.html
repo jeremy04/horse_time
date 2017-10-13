@@ -7,13 +7,12 @@
 
 
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
-<script type="text/javascript" src="/js/webrtc/jwplayer.js"></script>
+<script type="text/javascript" src="https://content.jwplatform.com/libraries/AIQQwOuF.js"></script>
 <script type="text/javascript" src="/js/webrtc/peer.js"></script>
 <script>
 var peer = new Peer({
   host: 'peerserver1337.herokuapp.com',
   port: 443,
-  //key: 'srjzs0cvcevu0udi',
   key: 'peerjs',
   debug: 3,
   secure: true,
@@ -23,7 +22,7 @@ var peer = new Peer({
   }
 });
 
-var deadPlayer;
+var deadPlayer = null;
 
 var connectedPeers = {};
 // Show this peer's ID.
@@ -45,13 +44,14 @@ function connect(peer_conn) {
     var messages = $('<div><em>Peer connected.</em></div>').addClass('messages');
     chatbox.append(header);
     chatbox.append(messages);
-
-    deadPlayer = jwplayer("player").setup({
-      "file": "https://archive.org/download/gd85-09-07.sbd.miller.18102.sbeok.shnf/gd85-09-07d1t02.mp3",
-      "image": "http://www.moseswinetours.com/images/dancing-bears.png",
-      "height": 159,
-      "width": 458
-    });
+    if (deadPlayer == null) {
+      deadPlayer = jwplayer("player").setup({
+        "file": "https://archive.org/download/gd85-09-07.sbd.miller.18102.sbeok.shnf/gd85-09-07d1t02.mp3",
+        "image": "http://www.moseswinetours.com/images/dancing-bears.png",
+        "height": 159,
+        "width": 458
+      });
+    }
 
     // Select connection handler.
     chatbox.on('click', function() {
@@ -69,7 +69,7 @@ function connect(peer_conn) {
     });
 
     peer_conn.on('close', function() {
-      alert(peer_conn.peer + ' has left the chat.');
+      console.log(peer_conn.peer + ' has left the chat.');
       chatbox.remove();
       if ($('.connection').length === 0) {
         $('.filler').show();

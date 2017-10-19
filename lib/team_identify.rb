@@ -41,7 +41,7 @@ class TeamIdentify
     page = http.get(uri.request_uri)
     doc = Nokogiri::HTML(page.body)
     link = doc.css(".site-main_primary.columns a").map { |x| x.attributes["href"].value }.select { |x| x =~ /#{team.gsub(/\W/," ").squish.gsub(" ", "-").downcase}/  }
-    "https://www.dailyfaceoff.com/#{link.first}"
+    "#{link.first}"
   end
 
   def determine_other_team(element)

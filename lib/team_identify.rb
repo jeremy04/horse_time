@@ -20,7 +20,6 @@ class TeamIdentify
 
     # Get latest game
     latest_game = horse_games(json).select { |h| Date.parse(h["date"]) == (@date.utc + Time.zone_offset("-10")).to_date }.first
-
     team = determine_other_team(latest_game)
     @other_team = team
     [get_link(@horse_team), get_link(team)]
@@ -40,6 +39,8 @@ class TeamIdentify
     http.verify_mode = OpenSSL::SSL::VERIFY_PEER
     page = http.get(uri.request_uri)
     doc = Nokogiri::HTML(page.body)
+    # Fix montreal canadiens on Daily faceoff
+    team = team.gsub('é','e')
     link = doc.css(".site-main_primary.columns a").map { |x| x.attributes["href"].value }.select { |x| x =~ /#{team.gsub(/\W/," ").squish.gsub(" ", "-").downcase}/  }
     "#{link.first}"
   end

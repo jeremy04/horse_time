@@ -20,7 +20,7 @@ class TeamScrapper
   end
 
   def active_player_link(link)
-    link.attributes.first[1] =~ /players\/news/
+    link.href =~ /players\/news/
   end
 
   def parse_names(links)

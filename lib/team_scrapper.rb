@@ -24,7 +24,7 @@ class TeamScrapper
   end
 
   def parse_names(links)
-    { :players => links.map { |link| link.text.gsub("\n","").gsub("\t","") }.uniq }
+    { :players => links.map { |link| link.text.gsub("\n","").gsub("\t","").gsub(/\s\#\d*/, "") }.uniq }
   end
 
 end

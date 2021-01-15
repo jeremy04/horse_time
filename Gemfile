@@ -12,6 +12,7 @@ gem "rollbar", "~> 2.7.1"
 gem "rake"
 gem 'pubnub', '~> 0.1'
 gem 'nokogiri'
+gem 'httparty'
 
 group :development do
   gem 'pry'

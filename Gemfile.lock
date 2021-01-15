@@ -12,7 +12,8 @@ GEM
     astrolabe (1.3.1)
       parser (~> 2.2)
     backports (3.6.7)
-    byebug (8.2.2)
+    byebug (11.1.3)
+    coderay (1.1.3)
     concurrent-ruby (1.1.5)
     cookiejar (0.3.0)
     daemons (1.3.1)
@@ -43,6 +44,7 @@ GEM
       nokogiri (~> 1.4)
       ntlm-http (~> 0.1, >= 0.1.1)
       webrobots (>= 0.0.9, < 0.2)
+    method_source (1.0.0)
     mime-types (2.6.2)
     mini_portile (0.6.2)
     minitest (5.12.2)
@@ -55,6 +57,12 @@ GEM
     parser (2.3.0.7)
       ast (~> 2.2)
     powerpack (0.1.1)
+    pry (0.13.1)
+      coderay (~> 1.1)
+      method_source (~> 1.0)
+    pry-byebug (3.9.0)
+      byebug (~> 11.0)
+      pry (~> 0.13.0)
     pubnub (0.1.12)
       em-http-request (>= 1.0.2)
       json
@@ -107,11 +115,12 @@ PLATFORMS
 
 DEPENDENCIES
   activesupport
-  byebug
   erubis
   json
   mechanize
   nokogiri
+  pry
+  pry-byebug
   pubnub (~> 0.1)
   rake
   redis

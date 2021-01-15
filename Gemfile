@@ -14,7 +14,8 @@ gem 'pubnub', '~> 0.1'
 gem 'nokogiri'
 
 group :development do
-  gem "byebug"
+  gem 'pry'
+  gem 'pry-byebug'
   gem "rubocop", "0.35.1", require: false
 end
 

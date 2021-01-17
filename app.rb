@@ -18,6 +18,7 @@ require "active_support/core_ext/hash/indifferent_access"
 require "uri"
 require "net/http"
 require "pubnub"
+require "httparty"
 
 enable :logging
 set :protection, except: [:json_csrf]
@@ -323,6 +324,11 @@ get "/login" do
     @public_rooms = matches
     erb :login
   end
+end
+
+get "/proxy" do
+  puts params[:uri]
+  HTTParty.get(params[:uri]).body
 end
 
 get "/exception" do

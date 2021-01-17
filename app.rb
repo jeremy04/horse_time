@@ -328,7 +328,8 @@ end
 
 get "/proxy" do
   puts params[:uri]
-  HTTParty.get(params[:uri]).body
+  agent = Mechanize.new
+  agent.get(CGI.unescape(params[:uri])).body
 end
 
 get "/exception" do

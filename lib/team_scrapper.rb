@@ -6,9 +6,9 @@ class TeamScrapper
     agent = Mechanize.new
     begin
       @page = agent.get(link)
-    rescue Net::HTTPForbidden
+    rescue Mechanize::ResponseCodeError
       link = CGI.escape(link)
-      HTTParty.get(ENV["LOCAL_HOST"] + "/proxy?uri=#{link}")
+      @page = agent.get(ENV["LOCAL_HOST"] + "/proxy?uri=#{link}")
     end
   end
 

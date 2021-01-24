@@ -13,6 +13,7 @@ gem "rake"
 gem 'pubnub', '~> 0.1'
 gem 'nokogiri'
 gem 'httparty'
+gem 'ngrok-tunnel'
 
 group :development do
   gem 'pry'

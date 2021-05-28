@@ -31,11 +31,9 @@ configure do
   REDIS = Redis.new(host: uri.host, port: uri.port, password: uri.password)
   puts "Pub nub starting"
   PUBNUB = Pubnub.new(
-    ENV["PUBNUB_PUBKEY"],
-    ENV["PUBNUB_SUBKEY"],
-    "", # secret key
-    "",
-    false
+    subscribe_key: ENV["PUBNUB_SUBKEY"],
+    publish_key: ENV["PUBNUB_PUBKEY"],
+    uuid: '5ab58262-66c8-4eea-a2eb-75ed2d14661b'
   )
 end
 

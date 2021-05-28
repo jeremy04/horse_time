@@ -13,7 +13,7 @@ end
 warmup do |app|
   unless ENV['LOCAL_HOST']
     require 'ngrok/tunnel'
-    options = {port: 4567}
+    options = {port: 4567, authtoken: '1oWjVzox3Ws9LvIJJQPtbLk1D9R_mPaZTX2DWbb77nx8aJjq' }
     Ngrok::Tunnel.start(options)
     url = Ngrok::Tunnel.ngrok_url_https
     puts "[NGROK] tunneling at  #{url}"

@@ -14,6 +14,8 @@ gem 'pubnub', '~> 4.6.1'
 gem 'nokogiri', '~> 1.11.6'
 gem 'httparty'
 gem 'ngrok-tunnel'
+gem 'puppeteer-ruby'
+gem 'puma'
 
 group :development do
   gem 'pry'

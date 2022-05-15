@@ -1,9 +1,8 @@
 require 'json'
 require 'net/https'
 require 'nokogiri'
-require './lib/team_identify'
-require './lib/team_scrapper'
 require './lib/cache_wrapper'
+require 'puppeteer-ruby'
 
 class ActiveRoster
   def initialize(horse_team, room_code, date=Time.now)
@@ -35,7 +34,7 @@ class ActiveRoster
     else
       home_team_id = jsonData["gameData"]["teams"]["home"]["id"]
       away_team_id = jsonData["gameData"]["teams"]["away"]["id"]
-      
+
       uri = URI("https://statsapi.web.nhl.com/api/v1/teams?site=en_nhl&teamId=#{home_team_id},#{away_team_id}&expand=team.roster,roster.person,person.stats&stats=statsSingleSeason")
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = true
@@ -52,17 +51,8 @@ class ActiveRoster
 
     scratches = JSON.parse(REDIS.hget(@room_code, "scratches")).map { |h| normalize(h) }
 
-
-    i = TeamIdentify.new(@horse_team)
-    horse_link, other_link = i.determine_team
-
-    s = TeamScrapper.new
-    s.visit_roster(horse_link)
-    horse_lines = s.scrape_players[:players]
-
-    s2 = TeamScrapper.new
-    s2.visit_roster(other_link)
-    other_lines = s2.scrape_players[:players]
+    horse_lines = scrape(@horse_team)
+    other_lines = scrape(jsonData.dig('gameData','teams','away','name'))
 
     home_skaters = home_skaters.map { |h| normalize(h) }
     horse_lines = horse_lines.map { |h| normalize(h) } - scratches
@@ -79,6 +69,21 @@ class ActiveRoster
   end
 
   private
+
+  def scrape(team)
+    Puppeteer.launch(headless: true, slow_mo: 50, args: ['--window-size=1280,800']) do |browser|
+      page = browser.new_page
+      page.viewport = Puppeteer::Viewport.new(width: 1280, height: 800)
+      page.goto("https://www.lineups.com/nhl/line-combinations", wait_until: 'domcontentloaded')
+      logos = page.query_selector_all(".team-name")
+      page.wait_for_navigation do
+        logo = logos.select { |logo| logo.eval_on_selector("a", "a => a.innerText") == team }.first.click
+      end
+      forward_lines = page.query_selector("#forwards-lines").query_selector_all(".player-name-col-lg")
+      defenseman_lines = page.query_selector("#defenseman-lines").query_selector_all(".player-name-col-lg")
+      (forward_lines + defenseman_lines).map { |player| player.evaluate('(node) => node.innerText') }
+    end
+  end
 
   def normalize(name)
     name.split.join(" ").downcase.gsub(/[^\w\s\-]/,'')

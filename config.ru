@@ -10,17 +10,5 @@ Rollbar.configure do |config|
   config.access_token = ENV['ROLLBAR_ACCESS_TOKEN']
 end
 
-warmup do |app|
-  unless ENV['LOCAL_HOST']
-    require 'ngrok/tunnel'
-    options = {port: 4567, authtoken: '1oWjVzox3Ws9LvIJJQPtbLk1D9R_mPaZTX2DWbb77nx8aJjq' }
-    Ngrok::Tunnel.start(options)
-    url = Ngrok::Tunnel.ngrok_url_https
-    puts "[NGROK] tunneling at  #{url}"
-    puts "[NGROK] Port #{Ngrok::Tunnel.port}"
-    puts `heroku config:set LOCAL_HOST=#{url}`
-  end
-end
-
 use Rollbar::Middleware::Sinatra
 run Sinatra::Application

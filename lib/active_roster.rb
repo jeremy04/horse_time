@@ -4,6 +4,9 @@ require 'nokogiri'
 require './lib/cache_wrapper'
 require 'puppeteer-ruby'
 
+#requires chrome:
+# heroku buildpacks:add heroku/google-chrome
+
 class ActiveRoster
   def initialize(horse_team, room_code, date=Time.now)
     @horse_team = horse_team

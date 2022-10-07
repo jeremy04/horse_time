@@ -18,7 +18,7 @@ class ActiveRoster
     wrapper = CacheWrapper.new("available_games", "games")
     json = JSON.parse(wrapper.get_cached(AvailableGames.new, "json"))
     json = json.select { |x| x["awayTeam"] == @horse_team || x["homeTeam"] == @horse_team }
-    latest_game = horse_games(json).select { |h| Date.parse(h["date"]) == (@date.utc + Time.zone_offset("-10")).to_date }.first
+    latest_game = horse_games(json).find { |h| Date.parse(h["date"]) == (@date.utc + Time.zone_offset("-10")).to_date }
 
     uri = URI("https://statsapi.web.nhl.com/api/v1/game/#{latest_game["gameID"]}/feed/live?site=en_nhl")
     http = Net::HTTP.new(uri.host, uri.port)
@@ -47,8 +47,8 @@ class ActiveRoster
       page = http.get(uri.request_uri)
       jsonData = JSON.parse(page.body)
 
-      home_skaters = jsonData["teams"].select { |team| team["id"] == home_team_id }.first["roster"]["roster"].select { |p| p["person"]["primaryPosition"]["code"] != "G" && p["person"]["rosterStatus"] != "I" }.map { |p| p["person"]["fullName"] }
-      away_skaters = jsonData["teams"].select { |team| team["id"] == away_team_id }.first["roster"]["roster"].select { |p| p["person"]["primaryPosition"]["code"] != "G" && p["person"]["rosterStatus"] != "I" }.map { |p| p["person"]["fullName"] }
+      home_skaters = jsonData["teams"].find { |team| team["id"] == home_team_id }["roster"]["roster"].select { |p| p["person"]["primaryPosition"]["code"] != "G" && p["person"]["rosterStatus"] != "I" }.map { |p| p["person"]["fullName"] }
+      away_skaters = jsonData["teams"].find { |team| team["id"] == away_team_id }["roster"]["roster"].select { |p| p["person"]["primaryPosition"]["code"] != "G" && p["person"]["rosterStatus"] != "I" }.map { |p| p["person"]["fullName"] }
     end
 
 
@@ -80,7 +80,7 @@ class ActiveRoster
       page.goto("https://www.lineups.com/nhl/line-combinations", wait_until: 'domcontentloaded')
       logos = page.query_selector_all(".team-name")
       page.wait_for_navigation do
-        logo = logos.select { |logo| logo.eval_on_selector("a", "a => a.innerText") == team }.first.click
+        logo = logos.find { |logo| logo.eval_on_selector("a", "a => a.innerText").strip == team.strip }.click
       end
       forward_lines = page.query_selector("#forwards-lines").query_selector_all(".player-name-col-lg")
       defenseman_lines = page.query_selector("#defenseman-lines").query_selector_all(".player-name-col-lg")

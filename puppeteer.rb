@@ -1,8 +1,7 @@
 require 'puppeteer-ruby'
-require 'pry'
 require 'nokogiri'
 
-def scrape(team)
+def scrape(_team)
     #,  '--no-sandbox',  '--disable-setuid-sandbox', '--disable-infobars', '--ignore-certifcate-errors'
     options = {
       headless: true,

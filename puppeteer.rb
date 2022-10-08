@@ -6,7 +6,7 @@ def scrape(team)
       headless: true,
       slow_mo:  50,
       args: [
-        '--window-size=1280,800'
+        '--window-size=1280,800',
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-infobars',

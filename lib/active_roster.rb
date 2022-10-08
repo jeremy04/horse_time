@@ -3,7 +3,6 @@ require 'net/https'
 require 'nokogiri'
 require './lib/cache_wrapper'
 require 'puppeteer-ruby'
-
 #requires chrome:
 # heroku buildpacks:add heroku/google-chrome
 
@@ -32,8 +31,8 @@ class ActiveRoster
     players = jsonData["gameData"]["players"].map { |p| p[1] }
 
     if players.size > 0
-      home_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].tr('é','e') == latest_game["homeTeam"].tr('é','e') }.map { |p| p["fullName"] }
-      away_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].tr('é','e') == latest_game["awayTeam"].tr('é','e') }.map { |p| p["fullName"] }
+      home_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].gsub('é','e') == latest_game["homeTeam"].gsub('é','e') }.map { |p| p["fullName"] }
+      away_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].gsub('é','e') == latest_game["awayTeam"].gsub('é','e') }.map { |p| p["fullName"] }
     else
       home_team_id = jsonData["gameData"]["teams"]["home"]["id"]
       away_team_id = jsonData["gameData"]["teams"]["away"]["id"]
@@ -53,9 +52,8 @@ class ActiveRoster
 
 
     scratches = JSON.parse(REDIS.hget(@room_code, "scratches")).map { |h| normalize(h) }
-
     horse_lines = scrape(@horse_team)
-    other_lines = scrape(jsonData.dig('gameData','teams','away','name'))
+    other_lines = scrape(jsonData.dig('teams')[0]['name'])
 
     home_skaters = home_skaters.map { |h| normalize(h) }
     horse_lines = horse_lines.map { |h| normalize(h) } - scratches

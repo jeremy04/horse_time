@@ -31,8 +31,8 @@ class ActiveRoster
     players = jsonData["gameData"]["players"].map { |p| p[1] }
 
     if players.size > 0
-      home_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].gsub('é','e') == latest_game["homeTeam"].gsub('é','e') }.map { |p| p["fullName"] }
-      away_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].gsub('é','e') == latest_game["awayTeam"].gsub('é','e') }.map { |p| p["fullName"] }
+      home_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].tr('é','e') == latest_game["homeTeam"].tr('é','e') }.map { |p| p["fullName"] }
+      away_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].tr('é','e') == latest_game["awayTeam"].tr('é','e') }.map { |p| p["fullName"] }
     else
       home_team_id = jsonData["gameData"]["teams"]["home"]["id"]
       away_team_id = jsonData["gameData"]["teams"]["away"]["id"]
@@ -72,39 +72,13 @@ class ActiveRoster
   private
 
   def scrape(team)
-    options = {
-        headless: true,
-        slow_mo:  50,
-        args: ['--window-size=1280,800']
-      }
-
-      Puppeteer.launch **options do |browser|
-        page = browser.new_page
-        page.viewport = Puppeteer::Viewport.new(width: 1280, height: 800)
-        page.evaluate_on_new_document(<<~JAVASCRIPT)
-        () => {
-          Object.defineProperty(navigator, "webdriver", {get: () => false});
-          Object.defineProperty(window, "webdriver", {get: () => false});
-          window.navigator.chrome = {
-              runtime: {},
-          };
-          Object.defineProperty(navigator, 'platform', {
-              get: () => "Win32",
-          });
-
-          Object.defineProperty(navigator, 'plugins', {
-              get: () => [1, 2],
-          });
-
-        }
-        JAVASCRIPT
-        page.user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.39 Safari/537.36"
-        page.goto("https://dailyfaceoff.com/teams/#{team.downcase.gsub(/\s/,"-")}/line-combinations/", wait_until: 'domcontentloaded')
-        doc = Nokogiri::HTML(page.content)
-        forwards = doc.css("#forwards").css(".player-name").map { |name| name.text }
-        defense = doc.css("#defense").css(".player-name").map { |name| name.text }
-        forwards + defense
-      end
+    api_key = ENV['SCRAPEANT_API_KEY']
+    url = CGI.escape("https://dailyfaceoff.com/teams/#{team.downcase.gsub(/\s/,"-")}/line-combinations/")
+    html = `curl -s -L  --user-agent 'Chrome/79' --request GET 'https://api.scrapingant.com/v2/general?url=#{url}&x-api-key=#{api_key}&proxy_country=US&return_page_source=true'`
+    doc = Nokogiri::HTML(html)
+    forwards = doc.css("#forwards").css(".player-name").map { |name| name.text }
+    defense = doc.css("#defense").css(".player-name").map { |name| name.text }
+    forwards + defense
   end
 
   def normalize(name)

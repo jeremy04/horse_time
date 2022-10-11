@@ -33,8 +33,8 @@ class ActiveRoster
     players = jsonData["gameData"]["players"].map { |p| p[1] }
 
     if players.size > 0
-      home_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].gsub('é','e') == latest_game["homeTeam"].gsub('é','e') }.map { |p| p["fullName"] }
-      away_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].gsub('é','e') == latest_game["awayTeam"].gsub('é','e') }.map { |p| p["fullName"] }
+      home_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].tr('é','e') == latest_game["homeTeam"].tr('é','e') }.map { |p| p["fullName"] }
+      away_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].tr('é','e') == latest_game["awayTeam"].tr('é','e') }.map { |p| p["fullName"] }
     else
       home_team_id = jsonData["gameData"]["teams"]["home"]["id"]
       away_team_id = jsonData["gameData"]["teams"]["away"]["id"]
@@ -85,7 +85,7 @@ class ActiveRoster
     api_key = ENV['SCRAPEANT_API_KEY']
     pp "Scrapping https://dailyfaceoff.com/teams/#{team.downcase.gsub(/\s/,"-")}/line-combinations/"
     url = CGI.escape("https://dailyfaceoff.com/teams/#{team.downcase.gsub(/\s/,"-")}/line-combinations/")
-    scrape_ant_url = 'https://api.scrapingant.com/v2/general?url=#{url}&x-api-key=#{api_key}&proxy_country=US&return_page_source=true'
+    scrape_ant_url = "https://api.scrapingant.com/v2/general?url=#{url}&x-api-key=#{api_key}&proxy_country=US&return_page_source=true"
     response = HTTParty.get(scrape_ant_url)
     if response.success?
       doc = Nokogiri::HTML(response.body)

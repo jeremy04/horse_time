@@ -3,6 +3,8 @@ require 'net/https'
 require 'nokogiri'
 require './lib/cache_wrapper'
 require 'puppeteer-ruby'
+require 'cgi'
+require 'httparty'
 #requires chrome:
 # heroku buildpacks:add heroku/google-chrome
 
@@ -31,8 +33,8 @@ class ActiveRoster
     players = jsonData["gameData"]["players"].map { |p| p[1] }
 
     if players.size > 0
-      home_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].tr('é','e') == latest_game["homeTeam"].tr('é','e') }.map { |p| p["fullName"] }
-      away_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].tr('é','e') == latest_game["awayTeam"].tr('é','e') }.map { |p| p["fullName"] }
+      home_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].gsub('é','e') == latest_game["homeTeam"].gsub('é','e') }.map { |p| p["fullName"] }
+      away_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].gsub('é','e') == latest_game["awayTeam"].gsub('é','e') }.map { |p| p["fullName"] }
     else
       home_team_id = jsonData["gameData"]["teams"]["home"]["id"]
       away_team_id = jsonData["gameData"]["teams"]["away"]["id"]
@@ -62,6 +64,14 @@ class ActiveRoster
     other_lines = other_lines.map { |h| normalize(h) } - scratches
 
     if latest_game["homeTeam"] == @horse_team
+      pp "NHL API:"
+      pp home_skaters
+      pp away_skaters
+
+      pp "Daily Faceoff"
+      pp horse_lines
+      pp other_lines
+
       return { :horse_team => home_skaters & horse_lines, :other_team => away_skaters & other_lines }
     else
       return { :horse_team => away_skaters & other_lines, :other_team => home_skaters & horse_lines  }
@@ -73,12 +83,19 @@ class ActiveRoster
 
   def scrape(team)
     api_key = ENV['SCRAPEANT_API_KEY']
+    pp "Scrapping https://dailyfaceoff.com/teams/#{team.downcase.gsub(/\s/,"-")}/line-combinations/"
     url = CGI.escape("https://dailyfaceoff.com/teams/#{team.downcase.gsub(/\s/,"-")}/line-combinations/")
-    html = `curl -s -L  --user-agent 'Chrome/79' --request GET 'https://api.scrapingant.com/v2/general?url=#{url}&x-api-key=#{api_key}&proxy_country=US&return_page_source=true'`
-    doc = Nokogiri::HTML(html)
-    forwards = doc.css("#forwards").css(".player-name").map { |name| name.text }
-    defense = doc.css("#defense").css(".player-name").map { |name| name.text }
-    forwards + defense
+    scrape_ant_url = 'https://api.scrapingant.com/v2/general?url=#{url}&x-api-key=#{api_key}&proxy_country=US&return_page_source=true'
+    response = HTTParty.get(scrape_ant_url)
+    if response.success?
+      doc = Nokogiri::HTML(response.body)
+      forwards = doc.css("#forwards").css(".player-name").map { |name| name.text }
+      defense = doc.css("#defense").css(".player-name").map { |name| name.text }
+
+      forwards + defense
+    else
+      raise "Scrapping failed"
+    end
   end
 
   def normalize(name)

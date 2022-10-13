@@ -31,14 +31,13 @@ class ActiveRoster
 
     jsonData = JSON.parse(page.body)
     players = jsonData["gameData"]["players"].map { |p| p[1] }
+    home_team_id = jsonData["gameData"]["teams"]["home"]["id"]
+    away_team_id = jsonData["gameData"]["teams"]["away"]["id"]
 
     if players.size > 0
       home_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].tr('é','e') == latest_game["homeTeam"].tr('é','e') }.map { |p| p["fullName"] }
       away_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].tr('é','e') == latest_game["awayTeam"].tr('é','e') }.map { |p| p["fullName"] }
     else
-      home_team_id = jsonData["gameData"]["teams"]["home"]["id"]
-      away_team_id = jsonData["gameData"]["teams"]["away"]["id"]
-
       uri = URI("https://statsapi.web.nhl.com/api/v1/teams?site=en_nhl&teamId=#{home_team_id},#{away_team_id}&expand=team.roster,roster.person,person.stats&stats=statsSingleSeason")
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = true
@@ -51,7 +50,6 @@ class ActiveRoster
       home_skaters = jsonData["teams"].find { |team| team["id"] == home_team_id }["roster"]["roster"].select { |p| p["person"]["primaryPosition"]["code"] != "G" && p["person"]["rosterStatus"] != "I" }.map { |p| p["person"]["fullName"] }
       away_skaters = jsonData["teams"].find { |team| team["id"] == away_team_id }["roster"]["roster"].select { |p| p["person"]["primaryPosition"]["code"] != "G" && p["person"]["rosterStatus"] != "I" }.map { |p| p["person"]["fullName"] }
     end
-
 
     scratches = JSON.parse(REDIS.hget(@room_code, "scratches")).map { |h| normalize(h) }
     horse_lines = scrape(@horse_team)

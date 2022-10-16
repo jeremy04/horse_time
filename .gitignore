@@ -21,3 +21,4 @@ _todo
 .*.swp
 .*.swo
 .byebug_history
+.env

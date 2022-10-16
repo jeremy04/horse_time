@@ -19,6 +19,10 @@ require "uri"
 require "net/http"
 require "pubnub"
 require "httparty"
+if ENV['RACK_ENV'] != 'production'
+  require 'dotenv'
+  Dotenv.load
+end
 
 enable :logging
 set :protection, except: [:json_csrf]

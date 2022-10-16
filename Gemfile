@@ -21,5 +21,6 @@ group :development do
   gem 'pry'
   gem 'pry-byebug'
   gem "rubocop", "0.35.1", require: false
+  gem 'dotenv'
 end
 

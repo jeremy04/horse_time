@@ -9,7 +9,6 @@ require "./lib/pick_order"
 require "./lib/rng.rb"
 require "./lib/players_validator"
 require "json"
-require "sinatra/contrib/all"
 require "active_support/all"
 require "pp"
 require "./cat_facts"
@@ -19,9 +18,11 @@ require "uri"
 require "net/http"
 require "pubnub"
 require "httparty"
+
 if ENV['RACK_ENV'] != 'production'
   require 'dotenv'
   Dotenv.load
+  require 'pry'
 end
 
 enable :logging
@@ -36,9 +37,12 @@ configure do
   puts "Pub nub starting"
   PUBNUB = Pubnub.new(
     subscribe_key: ENV["PUBNUB_SUBKEY"],
-    publish_key: ENV["PUBNUB_PUBKEY"],
-    uuid: '5ab58262-66c8-4eea-a2eb-75ed2d14661b'
+    publish_key:   ENV["PUBNUB_PUBKEY"],
+    uuid:          '5ab58262-66c8-4eea-a2eb-75ed2d14661b'
   )
+  def cookies
+    request.cookies.with_indifferent_access
+  end
 end
 
 class RoomCodeValidator

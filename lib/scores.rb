@@ -1,6 +1,5 @@
 require './lib/cache_wrapper'
 require 'active_support/all'
-require 'sinatra/contrib/all'
 require 'nokogiri'
 require 'json'
 require 'net/https'
@@ -17,7 +16,7 @@ class Scores
 
   def season_goals
     json = @json.select { |x| x["awayTeam"] == @horse_team || x["homeTeam"] == @horse_team }
-    latest_game = horse_games(json).select { |h| Date.parse(h["date"]) == (@date.utc + Time.zone_offset("-10")).to_date }.first
+    latest_game = horse_games(json).find { |h| Date.parse(h["date"]) == (@date.utc + Time.zone_offset("-10")).to_date }
 
     uri = URI("https://statsapi.web.nhl.com/api/v1/game/#{latest_game["gameID"]}/feed/live?site=en_nhl")
     http = Net::HTTP.new(uri.host, uri.port)
@@ -42,8 +41,8 @@ class Scores
 
     jsonData = JSON.parse(page.body)
 
-    home_skaters = jsonData["teams"].select { |team| team["id"] == home_team_id }.first["roster"]["roster"].map { |p| p["person"] }.select { |p| p["primaryPosition"]["code"] != "G" && p["rosterStatus"] != "I" }
-    away_skaters = jsonData["teams"].select { |team| team["id"] == away_team_id }.first["roster"]["roster"].map { |p| p["person"] }.select { |p| p["primaryPosition"]["code"] != "G" && p["rosterStatus"] != "I" }
+    home_skaters = jsonData["teams"].find { |team| team["id"] == home_team_id }["roster"]["roster"].map { |p| p["person"] }.select { |p| p["primaryPosition"]["code"] != "G" && p["rosterStatus"] != "I" }
+    away_skaters = jsonData["teams"].find { |team| team["id"] == away_team_id }["roster"]["roster"].map { |p| p["person"] }.select { |p| p["primaryPosition"]["code"] != "G" && p["rosterStatus"] != "I" }
 
     home_skaters = home_skaters.map { |s| [ ["name", s["fullName"] ] ,["goals", PlayerStats.new(s).goals], ["assists", PlayerStats.new(s).assists], ["points", PlayerStats.new(s).points], ["team", home_team_name], ["location", "horse_team"] ].to_h }
     away_skaters = away_skaters.map { |s| [ ["name", s["fullName"] ] ,["goals", PlayerStats.new(s).goals], ["assists", PlayerStats.new(s).assists], ["points", PlayerStats.new(s).points], ["team", away_team_name], ["location", "other_team"] ].to_h }
@@ -57,7 +56,7 @@ class Scores
 
   def goals
     json = @json.select { |x| x["awayTeam"] == @horse_team || x["homeTeam"] == @horse_team }
-    latest_game = horse_games(json).select { |h| Date.parse(h["date"]) == (@date.utc + Time.zone_offset("-10")).to_date }.first
+    latest_game = horse_games(json).find { |h| Date.parse(h["date"]) == (@date.utc + Time.zone_offset("-10")).to_date }
 
     uri = URI("https://statsapi.web.nhl.com/api/v1/game/#{latest_game["gameID"]}/feed/live?site=en_nhl")
     http = Net::HTTP.new(uri.host, uri.port)

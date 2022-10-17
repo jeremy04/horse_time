@@ -39,7 +39,7 @@ class ActiveRoster
 
     scratches = JSON.parse(REDIS.hget(@room_code, "scratches")).map { |h| normalize(h) }
     horse_lines = scrape(@horse_team)
-    other_lines = scrape(gameData.dig('gameData','teams','away','name').tr('é','e'))
+    other_lines = scrape(gameData.dig('gameData','teams','away','name'))
 
     home_skaters = home_skaters.map { |h| normalize(h) }
     horse_lines = horse_lines.map { |h| normalize(h) } - scratches
@@ -66,8 +66,9 @@ class ActiveRoster
 
   def scrape(team)
     api_key = ENV['SCRAPEANT_API_KEY']
-    pp "Scrapping https://dailyfaceoff.com/teams/#{team.downcase.gsub(/\s/,"-")}/line-combinations/"
-    url = CGI.escape("https://dailyfaceoff.com/teams/#{team.downcase.gsub(/\s/,"-")}/line-combinations/")
+    team = team.downcase.gsub(/\s/,"-").tr('é','e')
+    pp "Scrapping https://dailyfaceoff.com/teams/#{team}/line-combinations/"
+    url = CGI.escape("https://dailyfaceoff.com/teams/#{team}/line-combinations/")
     scrape_ant_url = "https://api.scrapingant.com/v2/general?url=#{url}&x-api-key=#{api_key}&proxy_country=US&return_page_source=true"
     response = HTTParty.get(scrape_ant_url)
     if response.success?

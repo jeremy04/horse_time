@@ -39,7 +39,7 @@ class ActiveRoster
 
     scratches = JSON.parse(REDIS.hget(@room_code, "scratches")).map { |h| normalize(h) }
     horse_lines = scrape(@horse_team)
-    other_lines = scrape(gameData.dig('gameData','teams','away','name'))
+    other_lines = scrape(gameData.dig('gameData','teams','away','name').tr('é','e'))
 
     home_skaters = home_skaters.map { |h| normalize(h) }
     horse_lines = horse_lines.map { |h| normalize(h) } - scratches

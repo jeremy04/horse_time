@@ -32,8 +32,7 @@ set :bind, "0.0.0.0"
 configure do
   require "uri"
   require "redis"
-  uri = URI.parse(ENV["REDISTOGO_URL"] || "http://127.0.0.1:6379")
-  REDIS = Redis.new(host: uri.host, port: uri.port, password: uri.password)
+  REDIS = Redis.new(url: ENV["REDISTOGO_URL"])
   puts "Pub nub starting"
   PUBNUB = Pubnub.new(
     subscribe_key: ENV["PUBNUB_SUBKEY"],

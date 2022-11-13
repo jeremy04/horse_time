@@ -1,14 +1,21 @@
 services:
   # A Ruby web service
   - type: web
-    name: sinatra
+    name: horsetime
     env: ruby
     repo: https://github.com/jeremy04/horse_time.git
     plan: free
+    region: ohio
     buildCommand: bundle install
     startCommand: bundle exec puma
-
+    envVars:
+      - key: REDISTOGO_URL
+        fromService:
+          type: redis
+          name: hammer
+          property: connectionString
     autoDeploy: false # optional
+
   # A Redis instance
   - type: redis
     name: hammer

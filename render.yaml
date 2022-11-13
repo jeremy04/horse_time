@@ -1,0 +1,23 @@
+services:
+  # A Ruby web service
+  - type: web
+    name: sinatra
+    env: ruby
+    repo: https://github.com/jeremy04/horse_time.git
+    scaling:
+      minInstances: 1
+      maxInstances: 3
+      targetMemoryPercent: 60 # optional if targetCPUPercent is set
+      targetCPUPercent: 60 # optional if targetMemory is set
+    buildCommand: bundle install
+    startCommand: bundle exec puma
+
+    autoDeploy: false # optional
+  # A Redis instance
+  - type: redis
+    name: hammer
+    ipAllowList: # required
+      - source: 0.0.0.0/0
+        description: everywhere
+    plan: free # optional (defaults to starter)
+    maxmemoryPolicy: noeviction # optional (defaults to allkeys-lru)

@@ -4,11 +4,7 @@ services:
     name: sinatra
     env: ruby
     repo: https://github.com/jeremy04/horse_time.git
-    scaling:
-      minInstances: 1
-      maxInstances: 3
-      targetMemoryPercent: 60 # optional if targetCPUPercent is set
-      targetCPUPercent: 60 # optional if targetMemory is set
+    plan: free
     buildCommand: bundle install
     startCommand: bundle exec puma
 

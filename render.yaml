@@ -23,4 +23,4 @@ services:
       - source: 0.0.0.0/0
         description: everywhere
     plan: free # optional (defaults to starter)
-    maxmemoryPolicy: noeviction # optional (defaults to allkeys-lru)
+    region: ohio

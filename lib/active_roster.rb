@@ -58,7 +58,7 @@ class ActiveRoster
 
       return { :horse_team => home_skaters & horse_lines, :other_team => away_skaters & other_lines }
     else
-      return { :horse_team => away_skaters & other_lines, :other_team => home_skaters & horse_lines  }
+      return { :horse_team => away_skaters & other_lines, :other_team => home_skaters & horse_lines }
     end
   end
 
@@ -67,18 +67,19 @@ class ActiveRoster
   def scrape(team)
     api_key = ENV['SCRAPEANT_API_KEY']
     team = team.downcase.gsub(/\s/,"-").tr('é','e')
-    pp "Scrapping https://dailyfaceoff.com/teams/#{team}/line-combinations/"
+    pp "Scraping https://dailyfaceoff.com/teams/#{team}/line-combinations/"
     url = CGI.escape("https://dailyfaceoff.com/teams/#{team}/line-combinations/")
     scrape_ant_url = "https://api.scrapingant.com/v2/general?url=#{url}&x-api-key=#{api_key}&proxy_country=US&return_page_source=true"
     response = HTTParty.get(scrape_ant_url)
     if response.success?
       doc = Nokogiri::HTML(response.body)
+      pp "Repsonse body:#{response.body}"
       forwards = doc.css("#forwards").css(".player-name").map { |name| name.text }
       defense = doc.css("#defense").css(".player-name").map { |name| name.text }
 
       forwards + defense
     else
-      raise "Scrapping failed"
+      raise "Scraping failed"
     end
   end
 

@@ -2,11 +2,8 @@ require 'json'
 require 'net/https'
 require 'nokogiri'
 require './lib/cache_wrapper'
-require 'puppeteer-ruby'
 require 'cgi'
 require 'httparty'
-#requires chrome:
-# heroku buildpacks:add heroku/google-chrome
 
 class ActiveRoster
   def initialize(horse_team, room_code, date=Time.now)
@@ -55,7 +52,7 @@ class ActiveRoster
       pp "Daily Faceoff"
       pp horse_lines
       pp other_lines
-
+      
       return { :horse_team => home_skaters & horse_lines, :other_team => away_skaters & other_lines }
     else
       return { :horse_team => away_skaters & other_lines, :other_team => home_skaters & horse_lines }

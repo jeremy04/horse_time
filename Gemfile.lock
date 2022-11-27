@@ -88,7 +88,6 @@ GEM
     net-http-digest_auth (1.4.1)
     net-http-persistent (4.0.1)
       connection_pool (~> 2.2)
-    ngrok-tunnel (2.1.1)
     nio4r (2.5.8)
     nokogiri (1.11.6)
       mini_portile2 (~> 2.5.0)
@@ -113,10 +112,6 @@ GEM
       timers (>= 4.3.0)
     puma (5.6.4)
       nio4r (~> 2.0)
-    puppeteer-ruby (0.40.7)
-      concurrent-ruby (~> 1.1.0)
-      mime-types (>= 3.0)
-      websocket-driver (>= 0.6.0)
     racc (1.5.2)
     rack (2.2.4)
     rack-protection (3.0.2)
@@ -151,9 +146,6 @@ GEM
     unf_ext (0.0.7.7)
     webrick (1.7.0)
     webrobots (0.1.2)
-    websocket-driver (0.7.5)
-      websocket-extensions (>= 0.1.0)
-    websocket-extensions (0.1.5)
     zeitwerk (2.2.0)
 
 PLATFORMS
@@ -166,13 +158,11 @@ DEPENDENCIES
   httparty
   json
   mechanize (~> 2.8.1)
-  ngrok-tunnel
   nokogiri (~> 1.11.6)
   pry
   pry-byebug
   pubnub (~> 4.6.1)
   puma
-  puppeteer-ruby
   redis
   rollbar (~> 2.7.1)
   rubocop (= 0.35.1)

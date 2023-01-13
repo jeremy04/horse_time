@@ -52,10 +52,10 @@ class ActiveRoster
       pp "Daily Faceoff"
       pp horse_lines
       pp other_lines
-      
-      return { :horse_team => home_skaters & horse_lines, :other_team => away_skaters & other_lines }
+
+      return { horse_team: home_skaters & horse_lines, other_team: away_skaters & other_lines }
     else
-      return { :horse_team => away_skaters & other_lines, :other_team => home_skaters & horse_lines }
+      return { horse_team: away_skaters & other_lines, other_team: home_skaters & horse_lines }
     end
   end
 
@@ -71,10 +71,11 @@ class ActiveRoster
     if response.success?
       doc = Nokogiri::HTML(response.body)
       pp "Repsonse body:#{response.body}"
+
       forwards = doc.css("#forwards").css(".player-name").map { |name| name.text }
       defense = doc.css("#defense").css(".player-name").map { |name| name.text }
 
-      forwards + defense
+      JSON.parse(doc.css("#__NEXT_DATA__").first.text).dig("props","pageProps","combinations","players").map { |x| x["name"].downcase }
     else
       raise "Scraping failed"
     end

@@ -25,8 +25,8 @@ class ActiveRoster
     away_team_id = gameData["gameData"]["teams"]["away"]["id"]
 
     if players.size > 0
-      home_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].tr('é','e') == latest_game["homeTeam"].tr('é','e') }.map { |p| p["fullName"] }
-      away_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].tr('é','e') == latest_game["awayTeam"].tr('é','e') }.map { |p| p["fullName"] }
+      home_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].tr('é', 'e') == latest_game["homeTeam"].tr('é', 'e') }.map { |p| p["fullName"] }
+      away_skaters = players.select { |p| p["currentTeam"] && p["currentTeam"]["name"].tr('é', 'e') == latest_game["awayTeam"].tr('é', 'e') }.map { |p| p["fullName"] }
     else
       puts "Getting roster https://statsapi.web.nhl.com/api/v1/teams?site=en_nhl&teamId=#{home_team_id},#{away_team_id}&expand=team.roster,roster.person,person.stats&stats=statsSingleSeason"
       teamData = HTTParty.get("https://statsapi.web.nhl.com/api/v1/teams?site=en_nhl&teamId=#{home_team_id},#{away_team_id}&expand=team.roster,roster.person,person.stats&stats=statsSingleSeason", headers: { 'Content-Type' => 'application/json' })
@@ -36,7 +36,7 @@ class ActiveRoster
 
     scratches = JSON.parse(REDIS.hget(@room_code, "scratches")).map { |h| normalize(h) }
     horse_lines = scrape(@horse_team)
-    other_lines = scrape(gameData.dig('gameData','teams','away','name'))
+    other_lines = scrape(gameData.dig('gameData', 'teams', 'away', 'name'))
 
     home_skaters = home_skaters.map { |h| normalize(h) }
     horse_lines = horse_lines.map { |h| normalize(h) } - scratches
@@ -63,7 +63,7 @@ class ActiveRoster
 
   def scrape(team)
     api_key = ENV['SCRAPEANT_API_KEY']
-    team = team.downcase.gsub(/\s/,"-").tr('é','e')
+    team = team.downcase.gsub(/\s/, "-").tr('é', 'e')
     pp "Scraping https://dailyfaceoff.com/teams/#{team}/line-combinations/"
     url = CGI.escape("https://dailyfaceoff.com/teams/#{team}/line-combinations/")
     scrape_ant_url = "https://api.scrapingant.com/v2/general?url=#{url}&x-api-key=#{api_key}&proxy_country=US&return_page_source=true"
@@ -72,17 +72,16 @@ class ActiveRoster
       doc = Nokogiri::HTML(response.body)
       pp "Repsonse body:#{response.body}"
 
-      forwards = doc.css("#forwards").css(".player-name").map { |name| name.text }
-      defense = doc.css("#defense").css(".player-name").map { |name| name.text }
-
-      JSON.parse(doc.css("#__NEXT_DATA__").first.text).dig("props","pageProps","combinations","players").map { |x| x["name"].downcase }
+      players = JSON.parse(doc.css("#__NEXT_DATA__").first.text).dig("props", "pageProps", "combinations", "players")
+      players = players.reject { |player| player["injuryStatus"] }.map { |x| x["name"].downcase }
+      players
     else
       raise "Scraping failed"
     end
   end
 
   def normalize(name)
-    name.split.join(" ").downcase.gsub(/[^\w\s\-]/,'')
+    name.split.join(" ").downcase.gsub(/[^\w\s\-]/, '')
   end
 
   def horse_games(json)

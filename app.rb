@@ -260,6 +260,8 @@ get %r{/room/([A-Z0-9]{4})} do |code|
     @players = JSON.parse(players).select {|p| p["status"] != "inactive" }.map {|p| p["name"] }
     wrapper = CacheWrapper.new("available_games", "games")
     @teams = JSON.parse(wrapper.get_cached(AvailableGames.new, "games"))
+    pp "@teams is set to:"
+    pp @teams
     @scratches = JSON.parse(REDIS.hget(@room_code, "scratches"))
     @game_over = REDIS.hget(@room_code, "ready") == "over"
     if REDIS.hget(@room_code, "ready") == "false"
@@ -273,10 +275,10 @@ get %r{/room/([A-Z0-9]{4})} do |code|
       @pick_order = pick_order.generate_pick_order
 
       @roster = JSON.parse(players).select {|p| p["status"] != "inactive" }.map {|acc, _h| {acc["name"] => acc["horses"]} }.reduce(:merge)
-      team_playing = @teams.find {|team| team.first == REDIS.hget(@room_code, "horse_team") }
+      team_playing = @teams.find {|team| team["home_team"] == REDIS.hget(@room_code, "horse_team") }
       if team_playing
-        @horse_team = team_playing.first
-        @other_team = team_playing[1]
+        @horse_team = team_playing["home_team"]
+        @other_team = team_playing["away_team"]
       else
         @horse_team = "Pittsburgh Penguins"
         @other_team = "Heroku sucks at time"
@@ -303,10 +305,11 @@ get %r{/room/([A-Z0-9]{4})} do |code|
       @pick_order = pick_order.generate_pick_order
 
       @roster = JSON.parse(players).select {|p| p["status"] != "inactive" }.map {|acc, _h| {acc["name"] => acc["horses"]} }.reduce(:merge)
-      team_playing = @teams.find {|team| team.first == REDIS.hget(@room_code, "horse_team") }
+
+      team_playing = @teams.find {|team| team["home_team"] == REDIS.hget(@room_code, "horse_team") }
       if team_playing
-        @horse_team = team_playing.first
-        @other_team = team_playing[1]
+        @horse_team = team_playing["home_team"]
+        @other_team = team_playing["away_team"]
       else
         @horse_team = "Pittsburgh Penguins"
         @other_team = "Heroku sucks at time"

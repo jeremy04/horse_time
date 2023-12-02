@@ -1,5 +1,5 @@
 source "http://rubygems.org"
-ruby "2.6.7"
+ruby '>=2.4'
 gem "sinatra", '~> 3.0.2'
 gem "mechanize", '~> 2.8.1'
 gem "json"

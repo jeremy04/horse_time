@@ -1,42 +1,34 @@
 require 'json'
-require 'active_support/all'
+require 'active_support/core_ext/hash/indifferent_access'
 require 'net/https'
+require 'httparty'
+require 'pp'
+require './lib/team_name'
 
 class AvailableGames
 
   attr_reader :json
 
   def initialize
-    @json = json_games
   end
 
-  def games(date=Time.now)
-    games = @json.select { |h| Date.parse(h["date"]) == (date.utc + Time.zone_offset("-10")).to_date }.map {|x| [x["homeTeam"],x["awayTeam"]] }.sort
-    games
-  end
+  def games(date = Date.today.to_s)
+    api_url = "https://api-web.nhle.com/v1/schedule/#{date}"
 
-  def json_games
-    time = (Time.now.utc + Time.zone_offset("-10")).to_date
-    next_day = time + 1.day
-    uri = URI("https://statsapi.web.nhl.com/api/v1/schedule?startDate=#{time.strftime("%Y-%m-%d")}&endDate=#{next_day.strftime("%Y-%m-%d")}&expand=schedule.teams,schedule.linescore,schedule.broadcasts.all,schedule.ticket,schedule.game.content.media.epg,schedule.radioBroadcasts,schedule.game.seriesSummary,seriesSummary.series&leaderCategories=&leaderGameTypes=R&site=en_nhl&teamId=&gameType=&timecode=")
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = true
-    http.ssl_version = :TLSv1_2
-    http.verify_mode = OpenSSL::SSL::VERIFY_PEER
-    page = http.get(uri.request_uri)
-    json = JSON.parse(page.body).with_indifferent_access
-    json = json[:dates].inject([]) do |memo, h| 
-      games = h[:games].map do |x|
-        { 
-          "date" => h[:date],
-          "gameID" => x[:gamePk], 
-          "awayTeam" => x[:teams][:away][:team][:name], 
-          "homeTeam" => x[:teams][:home][:team][:name]
-        }
+    response = HTTParty.get(api_url)
+
+    if response.code == 200
+      today_events = response.parsed_response['gameWeek'].select { |game| game['date'] == date }.first['games']
+      game_info = today_events.map do |event|
+        home_team = TeamName.get_team_name(event.dig('homeTeam','abbrev'))
+        away_team = TeamName.get_team_name(event.dig('awayTeam','abbrev'))
+        { game_id: event['id'], home_team: home_team, away_team: away_team }.with_indifferent_access
       end
-      memo << games
-    end.flatten
-    json
-  end
 
+      return game_info
+    else
+      puts "Failed to fetch data. HTTP Status Code: #{response.code}"
+      return []
+    end
+  end
 end

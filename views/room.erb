@@ -5,9 +5,9 @@
   var draftOrder;
   var pickCount = <%= @pick_count %>;
   var spareHorses = [];
-  
+
   var pubnub = PUBNUB({
-      subscribe_key: 'sub-c-ce8ecf20-6eb2-11e5-ba34-02ee2ddab7fe', 
+      subscribe_key: 'sub-c-ce8ecf20-6eb2-11e5-ba34-02ee2ddab7fe',
       publish_key: 'pub-c-af81b32e-d0dd-48a3-bac3-fbf02d262285',
       ssl : true,
     });
@@ -67,13 +67,13 @@
         alert("Fill in the values bro!")
         return;
       }
-      
+
       if (!_.contains(spareHorses, horse_team_1)) { alert("That's not a horse, bro"); return; }
       if (!_.contains(spareHorses, horse_team_2)) { alert("That's not a horse, bro"); return; }
       if (!_.contains(spareHorses, other_team_1)) { alert("That's not a horse, bro"); return; }
       if (!_.contains(spareHorses, other_team_2)) { alert("That's not a horse, bro"); return; }
 
-      $.post('/ghost_player', 
+      $.post('/ghost_player',
         { room_code: "<%= @room_code %>",
           name: name,
           horse_team_1: horse_team_1,
@@ -81,7 +81,7 @@
           other_team_1: other_team_1,
           other_team_2: other_team_2,
           scrub: true
-        }, 
+        },
           function(returnedData){
             if(returnedData != 'error' && returnedData != 'duplicate') {
               $( "#dialog-form" ).dialog( "close" );
@@ -106,8 +106,8 @@
 
   function horsesLeft(roster, eligibleHorses)
   {
-    used = _.flatten(_.map(_.values(roster), function(obj) { 
-      return obj.horse_team.concat(obj.other_team) 
+    used = _.flatten(_.map(_.values(roster), function(obj) {
+      return obj.horse_team.concat(obj.other_team)
     }));
 
     return _.difference(eligibleHorses.horse_team.concat(eligibleHorses.other_team), used);
@@ -123,7 +123,7 @@
     players = _.difference(spareHorses, players);
     players =  _.map(players, function(player) {
       hash = {};
-
+      console.log('top points: ', goals, player.toLowerCase());
       lookup_player = _.findWhere(goals, {"name": player.toLowerCase() });
       if (lookup_player === undefined || lookup_player === null)
       {
@@ -135,7 +135,7 @@
       }
       return hash;
     });
-    
+
     players = _.chain(players).sortBy(function(player) {
       return _.values(player)[0].goals;
     }).sortBy(function(player) {
@@ -147,19 +147,19 @@
 
   function displayRoster(eligibleHorses, data)
   {
-
     _.each(top_points(eligibleHorses.horse_team, data), function(player) {
+        console.log('other?', player)
       $("#other_team_scorers table").append("<tr>"
-        + "<td><p class='indent'>" + _.keys(player)[0] + "</p></td>" 
+        + "<td><p class='indent'>" + _.keys(player)[0] + "</p></td>"
         + "<td><p class='indent'>" +  "P: " +  _.values(player)[0].points + "</p></td>"
         + "<td><p class='indent'>" +  "G: " + _.values(player)[0].goals + "</p></td>"
         + "<td><p class='indent'>" +  "A: " + _.values(player)[0].assists + "</p></td>"
         +  "</tr><tr class='separator' />");
     });
-
+    console.log('other', eligibleHorses.other_team, data);
     _.each(top_points(eligibleHorses.other_team, data), function(player) {
        $("#horse_team_scorers table").append("<tr>"
-        + "<td><p class='indent'>" + _.keys(player)[0] + "</p></td>" 
+        + "<td><p class='indent'>" + _.keys(player)[0] + "</p></td>"
         + "<td><p class='indent'>" +  "P: " +  _.values(player)[0].points + "</p></td>"
         + "<td><p class='indent'>" +  "G: " + _.values(player)[0].goals + "</p></td>"
         + "<td><p class='indent'>" +  "A: " + _.values(player)[0].assists + "</p></td>"
@@ -170,9 +170,9 @@
 
   function displayGoals()
   {
-    $.get("/scores.json", { horse_team: "<%= @horse_team %>", room_code: "<%= @room_code %>" },function(data) 
+    $.get("/scores.json", { horse_team: "<%= @horse_team %>", room_code: "<%= @room_code %>" },function(data)
       {
-       
+
         roster = <%= @roster.to_json %>;
 
         _.each(data.goals, function(points, player){
@@ -180,7 +180,15 @@
           _.each(_.keys(roster), function(value) {
             var fullRoster = roster[value]["horse_team"].concat(roster[value]["other_team"]);
 
-            if(_.contains(fullRoster, toTitleCase(player) )) {
+
+            fullRoster = fullRoster.map(name => {
+              const [firstName, lastName] = name.split(' ');
+              return `${firstName.charAt(0)} ${lastName}`;
+            });
+
+
+            if(fullRoster.some(name => name === toTitleCase(player))) {
+              console.log("Calculating goals for: ", toTitleCase(player));
               shotTotals[value] += (points);
             }
           });
@@ -193,7 +201,13 @@
           _.each(_.keys(roster), function(value) {
             var fullRoster = roster[value]["horse_team"].concat(roster[value]["other_team"]);
 
-            if(_.contains(fullRoster, toTitleCase(player)) ) {
+            fullRoster = fullRoster.map(name => {
+              const [firstName, lastName] = name.split(' ');
+              return `${firstName.charAt(0)} ${lastName}`;
+            });
+
+            if(fullRoster.some(name => name === toTitleCase(player))) {
+              console.log("Calculating assists for: ", toTitleCase(player))
               shotTotals[value] += (points / 2);
             }
           });
@@ -221,14 +235,14 @@
     $("input[name=\"" + message.player + "\"]").css("display", "none");
     $("input[name=\"" + message.player + "\"]").val('');
     $("#" + message.player).css("color", "black");
-    
+
 
     $.get("/get_players.json", { room_code: "<%= @room_code %>" },
       function(data)
       {
         pickCount = data.pickCount;
         nextPlayer = pickOrder[pickCount];
-        
+
         $("#autodraft").val(nextPlayer);
 
         jQuery.noConflict();
@@ -238,13 +252,13 @@
           lookup: spareHorses,
           onSelect: function() { return; }
         });
-        
+
         var ht_cookie = JSON.parse(unescape(getCookieValue("horsetime")) ? unescape(getCookieValue("horsetime")) : '{"name": "Guest"}' );
 
         if (ht_cookie.name == nextPlayer) {
           $("#draft" + nextPlayer).css("display", "inline");
           $("#draft" + nextPlayer).prop("disabled",false);
-          $("input[name=\"" + nextPlayer + "\"]").css("display", "inline");                
+          $("input[name=\"" + nextPlayer + "\"]").css("display", "inline");
         }
 
         if (message.player == nextPlayer)
@@ -253,7 +267,7 @@
         }
         else
         {
-          $("#" + nextPlayer).css("color", "red");  
+          $("#" + nextPlayer).css("color", "red");
         }
 
         if (pickCount > (draftOrder.length * 4))
@@ -270,10 +284,10 @@
 
   }
 
-  function generateDraft(draftOrder, pickOrder) 
+  function generateDraft(draftOrder, pickOrder)
   {
     $("#" + pickOrder[pickCount]).css("color","red");
-    
+
     $("#autodraft").val(pickOrder[pickCount]);
 
     pubnub.subscribe({
@@ -283,15 +297,19 @@
     });
 
     _.each(draftOrder, function(player) {
-      
+
       var fullRoster = roster[player]["horse_team"].concat(roster[player]["other_team"]);
-     
+
       _.each(fullRoster, function(horse) {
         horse = horse.replace(/'/g, '');
+        // fix data element here
 
-        $("#horses_selected #" + player + "_horses").append("<p data-horse='" + horse + "' class='indent'>" + horse + "</p>");
+        const [firstName, lastName] = horse.split(' ');
+        const dataHorse = `${firstName.charAt(0)} ${lastName}`;
+
+        $("#horses_selected #" + player + "_horses").append("<p data-horse='" + dataHorse + "' class='indent'>" + horse + "</p>");
       });
-      
+
       $("input[name=\"" + player + "\"]").keypress(function (e) {
         if (e.which == 13) {
            $("#draft" + player).click();
@@ -299,7 +317,7 @@
       });
 
       $("#draft" + player).on("click", function(){
-        
+
         var currentPlayer = pickOrder[pickCount];
         /* Validations */
 
@@ -336,26 +354,26 @@
         }
 
         // UPDATE REDIS
-        
+
         currentPicks.horse_team = _.uniq(currentPicks.horse_team);
         currentPicks.other_team = _.uniq(currentPicks.other_team);
-        
+
         roster[currentPlayer] = currentPicks;
 
-        
-        $.post('/update_pick.json', 
+
+        $.post('/update_pick.json',
           { room_code: "<%= @room_code %>",
-            horse_team: primary_team_horse, 
-            other_team: other_team_horse, 
+            horse_team: primary_team_horse,
+            other_team: other_team_horse,
             name: currentPlayer
-          }, 
+          },
             function(returnedData){
               if(returnedData.errors.length > 0) {
                 alert(returnedData.errors[0]);
                 return;
               }
               pubnub.publish({
-                channel: 'horse_selected',        
+                channel: 'horse_selected',
                 message:  {
                       player: currentPlayer,
                       horse: selection
@@ -378,7 +396,7 @@
       horse_team_2 = $( "#horse_team_2" ),
       other_team_1 = $( "#other_team_1" ),
       other_team_2 = $( "#other_team_2" ),
-      
+
       allFields = $( [] ).add( name ).add( horse_team_1 ).add( horse_team_2 ).add( other_team_1 ).add( other_team_2 );
 
     dialog = $( "#dialog-form" ).dialog({
@@ -401,7 +419,7 @@
           }
       ]
     });
- 
+
     $( "#create-user" ).on( "click", function() {
       dialog.dialog( "open" );
     });
@@ -413,7 +431,7 @@
       _.each(randomPlayers, function(player, id) {
 
         var player_id = player.replace(/\s/, '');
-        
+
         shotTotals[player_id] = 0;
 
         $("#selectHorseContainer").append("<p id='" + player_id + "'>" + player );
@@ -429,9 +447,9 @@
             lookup: spareHorses,
             onSelect: function() { return; }
           });
-        
+
         var ht_cookie = JSON.parse(unescape(getCookieValue("horsetime")) ? unescape(getCookieValue("horsetime")) : '{"name": "Guest"}' );
-       
+
         if (ht_cookie.name == pickOrder[pickCount] ) {
           $("#draft" + ht_cookie.name).css("display", "inline");
           $("input[name=\"" + ht_cookie.name + "\"]").css("display", "inline");
@@ -439,9 +457,9 @@
 
       });
 
-    
+
       <% ['horse_team_1','horse_team_2','other_team_1', 'other_team_2'].each do |horse| %>
-        
+
         $("input[name=\"" + <%= horse.to_json %> +  "\"]").autocomplete({
             orientation: "auto",
             minChars: '2',
@@ -456,17 +474,18 @@
     $.get("/season_stats.json", { horse_team: "<%= @horse_team %>", room_code: "<%= @room_code %>" }, function( data ) {
         draftOrder = <%= @players.to_json %>;
         roster = <%= @roster.to_json %>;
-        
+
         // transform season_stats to eligibleHorses
 
         eligibleHorses = _.map(data, function(obj) { return [obj.location, obj.name] });
         eligibleHorses = _.groupBy(eligibleHorses, function(obj) { return obj[0] });
-        eligibleHorses = _.mapObject(eligibleHorses, function(value, key) { 
-          return _.map(value, function(p) { 
+        eligibleHorses = _.mapObject(eligibleHorses, function(value, key) {
+          return _.map(value, function(p) {
             return toTitleCase(p[1])
           }) });
 
         spareHorses = horsesLeft(roster, eligibleHorses);
+        console.log("spareHorses:", spareHorses);
 
         pickOrder = <%= @pick_order.to_json %>;
 
@@ -484,10 +503,10 @@
 
       $(this).attr("disabled", 'disabled');
 
-      $.get('/auto_pick.json', {       game_team: "<%= @horse_team %>", 
+      $.get('/auto_pick.json', {       game_team: "<%= @horse_team %>",
                                        name: $("#autodraft").val(),
-                                       room_code: "<%= @room_code %>" 
-                                     }, 
+                                       room_code: "<%= @room_code %>"
+                                     },
         function(returnedData){
           console.log("WOOO");
 
@@ -495,7 +514,7 @@
         });
 
 
-    });    
+    });
 
 });
 })(jQuery);
@@ -542,7 +561,7 @@
 
 
 <% if @manager == @user && (@game_over) %>
-<div id="dialog-form" title="Create new user ;)"> 
+<div id="dialog-form" title="Create new user ;)">
   <form>
     <fieldset>
       <label for="name">Name</label>
@@ -555,7 +574,7 @@
       <input type="text" name="other_team_1" class="form-control" autocomplete="off" id="other_team_1" value="">
       <label for="other_team_2">Horse 4 (away):</label>
       <input type="text" name="other_team_2" class="form-control" autocomplete="off" id="other_team_2" value="">
- 
+
       <!-- Allow form submission with keyboard without duplicating the dialog button -->
       <input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
     </fieldset>
@@ -569,7 +588,7 @@
   <% @scratches.each do |scratch| %>
     <p id="<%= scratch %>"><%= scratch %></p>
     <p>
-    <button type='submit' class='btn btn-default remove_scratch' id='<%= scratch %>'  role='button'>Remove</button> 
+    <button type='submit' class='btn btn-default remove_scratch' id='<%= scratch %>'  role='button'>Remove</button>
     </p>
 
   <% end %>

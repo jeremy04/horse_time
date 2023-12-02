@@ -1,5 +1,5 @@
 require './lib/cache_wrapper'
-require 'active_support/all'
+require 'active_support/core_ext/hash/indifferent_access'
 require 'nokogiri'
 require 'json'
 require 'net/https'
@@ -11,84 +11,64 @@ class Scores
     @horse_team = horse_team
     @date = date
     wrapper = CacheWrapper.new("available_games", "games")
-    @json = JSON.parse(wrapper.get_cached(AvailableGames.new, "json"))
+    games = JSON.parse(wrapper.get_cached(AvailableGames.new, "games"))
+    teams = horse_games(games)
+    other_team = teams["away_team"]
+    @home_franchise_id = TeamName.get_franchise(@horse_team)
+    @away_franchise_id = TeamName.get_franchise(other_team)
   end
 
   def season_goals
-    json = @json.select { |x| x["awayTeam"] == @horse_team || x["homeTeam"] == @horse_team }
-    latest_game = horse_games(json).find { |h| Date.parse(h["date"]) == (@date.utc + Time.zone_offset("-10")).to_date }
+    sort = [{"property" => "points", "direction" => "DESC"}].to_json
 
-    uri = URI("https://statsapi.web.nhl.com/api/v1/game/#{latest_game["gameID"]}/feed/live?site=en_nhl")
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = true
-    http.ssl_version = :TLSv1_2
-    http.verify_mode = OpenSSL::SSL::VERIFY_PEER
-    page = http.get(uri.request_uri)
+    home_url = "https://api.nhle.com/stats/rest/en/skater/summary?sort=#{sort}&cayenneExp=franchiseId=#{@home_franchise_id} and gameTypeId=2 and seasonId<=20232024 and seasonId>=20232024"
+    home_skaters = HTTParty.get(home_url).dig("data")
 
+    home_skaters = home_skaters.map do |skater|
+      [
+        ["name", skater["skaterFullName"].downcase],
+        ["goals", skater["goals"]],
+        ["assists", skater["assists"]],
+        ["points", skater["points"]],
+        ["location","horse_team"]
+      ].to_h.with_indifferent_access
+    end
 
-    jsonData = JSON.parse(page.body)
-    home_team_id   = jsonData["gameData"]["teams"]["home"]["id"]
-    away_team_id   = jsonData["gameData"]["teams"]["away"]["id"]
-    home_team_name = jsonData["gameData"]["teams"]["home"]["name"].gsub('é','e')
-    away_team_name = jsonData["gameData"]["teams"]["away"]["name"].gsub('é','e')
-   
-    uri = URI("https://statsapi.web.nhl.com/api/v1/teams?site=en_nhl&teamId=#{home_team_id},#{away_team_id}&expand=team.roster,roster.person,person.stats&stats=statsSingleSeason")
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = true
-    http.ssl_version = :TLSv1_2
-    http.verify_mode = OpenSSL::SSL::VERIFY_PEER
-    page = http.get(uri.request_uri)
+    away_url = "https://api.nhle.com/stats/rest/en/skater/summary?sort=#{sort}&cayenneExp=franchiseId=#{@away_franchise_id} and gameTypeId=2 and seasonId<=20232024 and seasonId>=20232024"
+    away_skaters = HTTParty.get(away_url).dig("data")
 
-    jsonData = JSON.parse(page.body)
-
-    home_skaters = jsonData["teams"].find { |team| team["id"] == home_team_id }["roster"]["roster"].map { |p| p["person"] }.select { |p| p["primaryPosition"]["code"] != "G" && p["rosterStatus"] != "I" }
-    away_skaters = jsonData["teams"].find { |team| team["id"] == away_team_id }["roster"]["roster"].map { |p| p["person"] }.select { |p| p["primaryPosition"]["code"] != "G" && p["rosterStatus"] != "I" }
-
-    home_skaters = home_skaters.map { |s| [ ["name", s["fullName"] ] ,["goals", PlayerStats.new(s).goals], ["assists", PlayerStats.new(s).assists], ["points", PlayerStats.new(s).points], ["team", home_team_name], ["location", "horse_team"] ].to_h }
-    away_skaters = away_skaters.map { |s| [ ["name", s["fullName"] ] ,["goals", PlayerStats.new(s).goals], ["assists", PlayerStats.new(s).assists], ["points", PlayerStats.new(s).points], ["team", away_team_name], ["location", "other_team"] ].to_h }
-
-    home_skaters = home_skaters.map { |x| x.merge('name' => normalize(x['name']) ) }
-    away_skaters = away_skaters.map { |x| x.merge('name' => normalize(x['name']) ) }    
+    away_skaters = away_skaters.map do |skater|
+      [
+        ["name", skater["skaterFullName"].downcase],
+        ["goals", skater["goals"]],
+        ["assists", skater["assists"]],
+        ["points", skater["points"]],
+        ["location","other_team"]
+      ].to_h.with_indifferent_access
+    end
 
     points = home_skaters + away_skaters
     points
   end
 
   def goals
-    json = @json.select { |x| x["awayTeam"] == @horse_team || x["homeTeam"] == @horse_team }
-    latest_game = horse_games(json).find { |h| Date.parse(h["date"]) == (@date.utc + Time.zone_offset("-10")).to_date }
+    boxscore =  HTTParty.get("https://api-web.nhle.com/v1/gamecenter/2023020356/boxscore")
+    stats = boxscore.dig('boxscore','playerByGameStats').with_indifferent_access
+    away_team = stats[:awayTeam].fetch_values(:forwards, :defense, :goalies).flatten
+    home_team = stats[:homeTeam].fetch_values(:forwards, :defense, :goalies).flatten
+    boxscores = home_team + away_team
 
-    uri = URI("https://statsapi.web.nhl.com/api/v1/game/#{latest_game["gameID"]}/feed/live?site=en_nhl")
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = true
-    http.ssl_version = :TLSv1_2
-    http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-    page = http.get(uri.path)
-
-    jsonData =  JSON.parse(page.body)
-    home_skaters = jsonData["liveData"]["boxscore"]["teams"]["home"]["players"].map { |p| p[1] }
-    away_skaters = jsonData["liveData"]["boxscore"]["teams"]["away"]["players"].map { |p| p[1] }
-
-    home_skaters = home_skaters.select { |s|    s["stats"].present? && s["stats"]["skaterStats"].present? }
-    home_goals   = home_skaters.map    { |s| [s["person"]["fullName"], s["stats"]["skaterStats"]["goals"]]}
-    home_assists = home_skaters.map    { |s| [s["person"]["fullName"], s["stats"]["skaterStats"]["assists"]]}
-
-    away_skaters = away_skaters.select { |s|    s["stats"].present? && s["stats"]["skaterStats"].present? }
-    away_goals   = away_skaters.map    { |s| [s["person"]["fullName"], s["stats"]["skaterStats"]["goals"]]}
-    away_assists = away_skaters.map    { |s| [s["person"]["fullName"], s["stats"]["skaterStats"]["assists"]]}  
-
-
-    goals   = home_goals.to_h.merge(away_goals.to_h)
-    assists = home_assists.to_h.merge(away_assists.to_h)
-  
-    foo = {:goals => goals, :assists => assists }
-    foo
+    boxscores.each_with_object({ goals: {}, assists: {} }) do |hash, transformed|
+      name = hash["name"]["default"].downcase # Extract and lowercase the name
+      transformed[:goals][name] = hash["goals"]
+      transformed[:assists][name] = hash["assists"]
+    end
   end
-  
+
   private
 
   def horse_games(json)
-    json.select { |x| x["awayTeam"] == @horse_team || x["homeTeam"] == @horse_team }
+    json.find { |team| team["home_team"] == @horse_team }
   end
 
   def normalize(name)

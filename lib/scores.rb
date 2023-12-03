@@ -16,6 +16,7 @@ class Scores
     other_team = teams["away_team"]
     @home_franchise_id = TeamName.get_franchise(@horse_team)
     @away_franchise_id = TeamName.get_franchise(other_team)
+    @game_id = teams['game_id']
   end
 
   def season_goals
@@ -47,16 +48,22 @@ class Scores
       ].to_h.with_indifferent_access
     end
 
+    # Replace this comment w unit test:
+    # [{ "name" => "joe pavelski", "goals" => 0, "assists" => 0, "points" => 0, "location" => "other_team" }]
+
     points = home_skaters + away_skaters
     points
   end
 
   def goals
-    boxscore =  HTTParty.get("https://api-web.nhle.com/v1/gamecenter/2023020356/boxscore")
+    boxscore =  HTTParty.get("https://api-web.nhle.com/v1/gamecenter/#{@game_id}/boxscore")
     stats = boxscore.dig('boxscore','playerByGameStats').with_indifferent_access
     away_team = stats[:awayTeam].fetch_values(:forwards, :defense, :goalies).flatten
     home_team = stats[:homeTeam].fetch_values(:forwards, :defense, :goalies).flatten
     boxscores = home_team + away_team
+
+    # Replace this comment w unit test:
+    # { :goals=>{"t. dellandrea"=>0}, :assists=>{"t. dellandrea"=>0} }
 
     boxscores.each_with_object({ goals: {}, assists: {} }) do |hash, transformed|
       name = hash["name"]["default"].downcase # Extract and lowercase the name

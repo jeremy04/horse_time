@@ -4,6 +4,8 @@ require 'net/https'
 require 'httparty'
 require 'pp'
 require './lib/team_name'
+require 'active_support/time'
+
 
 class AvailableGames
 
@@ -12,7 +14,9 @@ class AvailableGames
   def initialize
   end
 
-  def games(date = Date.today.to_s)
+  def games
+    Time.zone = 'Eastern Time (US & Canada)'
+    date = Time.zone.now.to_date.to_s
     api_url = "https://api-web.nhle.com/v1/schedule/#{date}"
 
     response = HTTParty.get(api_url)

@@ -252,6 +252,9 @@ post "/logout" do
 end
 
 get %r{/room/([A-Z0-9]{4})} do |code|
+  pp "current date"
+  pp Date.today.to_s
+  pp Date.today.to_time.zone
   if RoomCodeValidator.cookies_match_redis(cookies[:horsetime])
     @room_code = JSON.parse(cookies[:horsetime])["room_code"]
     @manager = REDIS.hget(@room_code, "room_manager")

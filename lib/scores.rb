@@ -5,6 +5,7 @@ require 'json'
 require 'net/https'
 require 'uri'
 require './lib/player_stats'
+require 'pp'
 
 class Scores
   def initialize(horse_team, date=Time.now)
@@ -57,7 +58,12 @@ class Scores
 
   def goals
     boxscore =  HTTParty.get("https://api-web.nhle.com/v1/gamecenter/#{@game_id}/boxscore")
-    stats = boxscore.dig('boxscore','playerByGameStats').with_indifferent_access
+
+    stats = boxscore.dig('boxscore', 'playerByGameStats')&.with_indifferent_access
+    pp "boxscore debug"
+    pp stats
+    return { goals: {}, assists: {} } if stats.nil?
+
     away_team = stats[:awayTeam].fetch_values(:forwards, :defense, :goalies).flatten
     home_team = stats[:homeTeam].fetch_values(:forwards, :defense, :goalies).flatten
     boxscores = home_team + away_team

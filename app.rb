@@ -386,6 +386,16 @@ get "/scores.json" do
   wrapper.get_cached(Scores.new(horse_team), "goals")
 end
 
+get "/health" do
+  content_type :json
+  begin
+    REDIS.set("health", Time.now.to_i)
+  rescue => Redis::CannotConnectError
+    return { health: "ERROR"  }.to_json
+  end
+  { health: "OK"  }.to_json
+end
+
 get "/random.json" do
   content_type :json
   agent = Mechanize.new

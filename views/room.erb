@@ -176,13 +176,18 @@
         roster = <%= @roster.to_json %>;
 
         _.each(data.goals, function(points, player){
+
           player = player.replace(/'/g, '');
+
+          player = player.split(" ").slice(0, 2).join(" ");
+
           _.each(_.keys(roster), function(value) {
             var fullRoster = roster[value]["horse_team"].concat(roster[value]["other_team"]);
 
 
             fullRoster = fullRoster.map(name => {
               const [firstName, lastName] = name.split(' ');
+
               return `${firstName.charAt(0)} ${lastName}`;
             });
 
@@ -198,6 +203,7 @@
 
         _.each(data.assists, function(points, player) {
           player = player.replace(/'/g, '');
+          player = player.split(" ").slice(0, 2).join(" ");
           _.each(_.keys(roster), function(value) {
             var fullRoster = roster[value]["horse_team"].concat(roster[value]["other_team"]);
 

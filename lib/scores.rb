@@ -59,7 +59,7 @@ class Scores
   def goals
     boxscore =  HTTParty.get("https://api-web.nhle.com/v1/gamecenter/#{@game_id}/boxscore")
 
-    stats = boxscore.dig('boxscore', 'playerByGameStats')&.with_indifferent_access
+    stats = boxscore.dig('playerByGameStats')&.with_indifferent_access
     pp "boxscore debug"
     pp stats
     return { goals: {}, assists: {} } if stats.nil?
